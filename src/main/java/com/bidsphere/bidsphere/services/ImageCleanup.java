@@ -13,9 +13,6 @@ import java.util.*;
 
 @Component
 public class ImageCleanup {
-    // Relevant repositories as attributes
-
-    // Run every 5 minutes to wipe images that have existed for longer than 5 minutes
     private static final String UPLOAD_DIR = "/home/ubuntu/cdn/";
     private final Map<String, Date> unclaimedImageIds = new HashMap<>();
 
@@ -36,6 +33,10 @@ public class ImageCleanup {
 
     @Async
     public void performCleanup() {
+        if (unclaimedImageIds.isEmpty()) {
+            return;
+        }
+
         ArrayList<String> imagesToCleanup = new ArrayList<>();
         for (String imageId : unclaimedImageIds.keySet()) {
             Date imageInsertDate = unclaimedImageIds.get(imageId);
