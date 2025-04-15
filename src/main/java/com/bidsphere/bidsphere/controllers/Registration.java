@@ -1,6 +1,5 @@
 package com.bidsphere.bidsphere.controllers;
 
-import com.bidsphere.bidsphere.components.RESTResponse;
 import com.bidsphere.bidsphere.dtos.ProfileDTO;
 import com.bidsphere.bidsphere.entities.Credentials;
 import com.bidsphere.bidsphere.entities.Customers;
@@ -12,16 +11,18 @@ import com.bidsphere.bidsphere.repositories.CustomersRepository;
 import com.bidsphere.bidsphere.repositories.SellersRepository;
 import com.bidsphere.bidsphere.repositories.UsersRepository;
 import com.bidsphere.bidsphere.services.PasswordHandler;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
 @CrossOrigin
+@RequestMapping("/api/registration")
 public class Registration {
 
     private final CredentialsRepository credentialsRepository;
@@ -48,15 +49,20 @@ public class Registration {
         this.passwordHandler = passwordHandler;
     }
 
-    @PostMapping("/api/register")
-    public RESTResponse<String> register(@RequestBody RegistrationRequest registrationRequest) {
+    @PostMapping("/create")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User registered successfully"),
+            @ApiResponse(responseCode = "409", description = "Username already exists"),
+            @ApiResponse(responseCode = "400", description = "Invalid registration data")
+    })
+    public ResponseEntity<String> register(@RequestBody RegistrationRequest registrationRequest) {
         UUID userId = UUID.randomUUID();
         String username = registrationRequest.getUsername();
         String passwordHash = this.passwordHandler.toHash(registrationRequest.getPassword());
         String email = registrationRequest.getEmail();
 
         if (this.credentialsRepository.existsByUsername(username)) {
-            return RESTResponse.failed("User already exists!");
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
         Credentials credentialsEntry = new Credentials(userId, username, passwordHash, email);
@@ -73,8 +79,6 @@ public class Registration {
             this.sellersRepository.save(seller);
         }
 
-        System.out.println("Worked!!!");
-
-        return RESTResponse.passed(userId.toString());
+        return ResponseEntity.ok(userId.toString());
     }
 }

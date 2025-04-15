@@ -2,14 +2,20 @@ package com.bidsphere.bidsphere.entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
 
 @Getter
+@Setter
 @Entity
 public class Sessions {
     @Id
+    private UUID id;
+
+    @Column(nullable = false)
     private UUID userId;
 
     @Column(nullable = false)
@@ -20,9 +26,16 @@ public class Sessions {
 
     protected Sessions() {}
 
-    public Sessions(UUID userId, String token, Date expiry) {
-        this.userId = userId;
-        this.token = token;
-        this.expiry = expiry;
+    public static Sessions forUser(UUID userId) {
+        Sessions sessions = new Sessions();
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DATE, 14);
+
+        sessions.setId(UUID.randomUUID());
+        sessions.setUserId(userId);
+        sessions.setToken(UUID.randomUUID().toString());
+        sessions.setExpiry(calendar.getTime());
+
+        return sessions;
     }
 }

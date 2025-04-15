@@ -24,10 +24,11 @@ public class ListingDTO {
     private boolean bestseller;
     private int status;
     private int authenticity;
+    private BidDTO latestBid;
 
     public ListingDTO() {}
 
-    public ListingDTO(Listings listings, ArrayList<UUID> displayImageIds) {
+    public ListingDTO(Listings listings, ArrayList<UUID> displayImageIds, BidDTO latestBid) {
         this.id = listings.getId();
         this.name = listings.getName();
         this.description = listings.getDescription();
@@ -40,5 +41,6 @@ public class ListingDTO {
         this.bestseller = listings.isBestseller();
         this.status = listings.getStatus();
         this.authenticity = listings.getAuthenticity();
+        this.latestBid = latestBid;
     }
 }

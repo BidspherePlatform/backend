@@ -1,12 +1,13 @@
 package com.bidsphere.bidsphere.controllers;
 
-import com.bidsphere.bidsphere.components.RESTResponse;
 import com.bidsphere.bidsphere.services.ImageCleanup;
+import com.bidsphere.bidsphere.types.ErrorCode;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -14,13 +15,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.UUID;
 
 @RestController
 @CrossOrigin
+@RequestMapping("/api/media")
 public class Media {
 
     private static final String UPLOAD_DIR = "/home/ubuntu/cdn/";
@@ -36,8 +36,13 @@ public class Media {
         public String image;
     }
 
-    @PostMapping("/media/save")
-    public RESTResponse<String> saveMedia(@RequestBody ImageRequest imageRequest) throws IOException {
+    @PostMapping("/upload")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid image format"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<String> saveMedia(@RequestBody ImageRequest imageRequest) throws IOException {
         try {
             UUID imageUUID = UUID.randomUUID();
             String filePath = UPLOAD_DIR + imageUUID.toString() + ".png";
@@ -45,7 +50,7 @@ public class Media {
             InputStream inputStream = new ByteArrayInputStream(decodedBytes);
             BufferedImage image = ImageIO.read(inputStream);
             if (image == null) {
-                return RESTResponse.failed("Unsupported image format or corrupted file");
+                return ResponseEntity.badRequest().build();
             }
 
             File imageFile = new File(filePath);
@@ -53,10 +58,10 @@ public class Media {
 
             imageCleanup.addImage(imageUUID.toString());
 
-            return RESTResponse.passed(imageUUID.toString());
+            return ResponseEntity.ok(imageUUID.toString());
         } catch (IOException e) {
             System.out.println(e.getMessage());
-            return RESTResponse.failed("File upload failed!");
+            return ResponseEntity.internalServerError().build();
         }
     }
 }

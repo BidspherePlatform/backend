@@ -17,13 +17,11 @@ import java.util.UUID;
 @RestController
 @CrossOrigin
 public class SessionizedController {
-    protected final SessionsRepository sessionsRepository;
-
+    protected SessionsRepository sessionsRepository;
     private UsersRepository usersRepository;
 
-    public SessionizedController(
-            SessionsRepository sessionsRepository
-    ) {
+    @Autowired
+    public void setSessionsRepository(SessionsRepository sessionsRepository) {
         this.sessionsRepository = sessionsRepository;
     }
 
@@ -36,6 +34,14 @@ public class SessionizedController {
         String token = Tokenization.getToken();
         Optional<Sessions> sessionQuery = this.sessionsRepository.findByToken(token);
 
+        return validateSession(sessionQuery);
+    }
+
+    protected Sessions getSession() {
+        return this.sessionsRepository.findByToken(Tokenization.getToken()).get();
+    }
+
+    protected boolean validateSession(Optional<Sessions> sessionQuery) {
         if (sessionQuery.isEmpty()) {
             return false;
         }
@@ -44,12 +50,14 @@ public class SessionizedController {
         UUID userId = session.getUserId();
         Optional<Users> userQuery = this.usersRepository.findById(userId);
         Instant dateRightNow = new Date().toInstant();
+        boolean sessionExpired = sessionQuery.get().getExpiry().toInstant().isBefore(dateRightNow);
 
-        return sessionQuery.get().getExpiry().toInstant().isAfter(dateRightNow)
+        if (sessionExpired) {
+            this.sessionsRepository.delete(sessionQuery.get());
+        }
+
+        return !sessionExpired
                 && userQuery.isPresent()
                 && userQuery.get().getPlatformAccess() == 0;
     }
-
-    protected Optional<Sessions> getSession() {
-        return this.sessionsRepository.findByToken(Tokenization.getToken());
-    }}
+}
