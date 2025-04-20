@@ -38,7 +38,7 @@ public class SessionizedController {
     }
 
     protected Sessions getSession() {
-        return this.sessionsRepository.findByToken(Tokenization.getToken()).get();
+        return this.sessionsRepository.findByToken(Tokenization.getToken()).orElse(null);
     }
 
     protected boolean validateSession(Optional<Sessions> sessionQuery) {

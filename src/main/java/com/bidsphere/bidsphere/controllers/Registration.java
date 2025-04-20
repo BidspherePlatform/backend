@@ -1,6 +1,8 @@
 package com.bidsphere.bidsphere.controllers;
 
 import com.bidsphere.bidsphere.dtos.ProfileDTO;
+import com.bidsphere.bidsphere.dtos.SellerDTO;
+import com.bidsphere.bidsphere.dtos.UserDTO;
 import com.bidsphere.bidsphere.entities.Credentials;
 import com.bidsphere.bidsphere.entities.Customers;
 import com.bidsphere.bidsphere.entities.Sellers;
@@ -18,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.UUID;
 
 @RestController
@@ -67,7 +70,12 @@ public class Registration {
 
         Credentials credentialsEntry = new Credentials(userId, username, passwordHash, email);
         ProfileDTO profile = registrationRequest.getProfile();
-        Users user = new Users(userId, profile.getUser());
+
+        UserDTO userDTO = profile.getUser();
+        userDTO.setRegistrationDate(new Date());
+        userDTO.setPlatformAccess(0);
+
+        Users user = new Users(userId, userDTO);
         Customers customer = new Customers(userId, profile.getCustomer());
 
         this.usersRepository.save(user);
@@ -75,6 +83,9 @@ public class Registration {
         this.credentialsRepository.save(credentialsEntry);
 
         if (profile.getSeller() != null) {
+            SellerDTO sellerDTO = profile.getSeller();
+            sellerDTO.setReputation(5);
+
             Sellers seller = new Sellers(userId, profile.getSeller());
             this.sellersRepository.save(seller);
         }

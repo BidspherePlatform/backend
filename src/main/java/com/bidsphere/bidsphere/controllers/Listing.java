@@ -10,8 +10,10 @@ import com.bidsphere.bidsphere.repositories.BidsRepository;
 import com.bidsphere.bidsphere.repositories.ListingImagesRepository;
 import com.bidsphere.bidsphere.repositories.ListingsRepository;
 import com.bidsphere.bidsphere.repositories.SellersRepository;
+import com.bidsphere.bidsphere.types.ListingStatus;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.constraints.Null;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -19,10 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @CrossOrigin
@@ -52,6 +51,15 @@ public class Listing extends SessionizedController {
             @ApiResponse(responseCode = "422", description = "Invalid product authenticity - cannot create the listing")
     })
     public ResponseEntity<String> createListing(@RequestBody ListingDTO listingDTO) {
+        Sessions session = this.getSession();
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (!this.sellersRepository.existsById(listingDTO.getSellerId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         UUID listingId = UUID.randomUUID();
 
         if (listingDTO.getAuthenticity() < 3) {
@@ -59,6 +67,9 @@ public class Listing extends SessionizedController {
         }
 
         Listings listings = new Listings(listingId, listingDTO);
+        listings.setStartDate(new Date());
+        listings.setStatus(ListingStatus.ACTIVE);
+
         this.listingsRepository.save(listings);
 
         ArrayList<ListingImages> images = new ArrayList<>();
@@ -69,6 +80,52 @@ public class Listing extends SessionizedController {
         this.listingImagesRepository.saveAll(images);
 
         return ResponseEntity.created(URI.create("/api/listing/" + listingId)).body(listingId.toString());
+    }
+
+    @PatchMapping("/finish/{listingId}")
+    public ResponseEntity<Null> finishListing(@PathVariable UUID listingId) {
+        Sessions session = this.getSession();
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Listings> listingQuery = this.listingsRepository.findById(listingId);
+        if (listingQuery.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Listings listing = listingQuery.get();
+        if (!listing.getSellerId().equals(session.getUserId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        listing.setStatus(ListingStatus.CLOSED);
+        this.listingsRepository.save(listing);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/terminate/{listingId}")
+    public ResponseEntity<String> terminateListing(@PathVariable UUID listingId) {
+        Sessions session = this.getSession();
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Listings> listingQuery = this.listingsRepository.findById(listingId);
+        if (listingQuery.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Listings listing = listingQuery.get();
+        if (!listing.getSellerId().equals(session.getUserId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        listing.setStatus(ListingStatus.TERMINATED);
+        this.listingsRepository.save(listing);
+
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{listingId}")
@@ -113,7 +170,7 @@ public class Listing extends SessionizedController {
 
     @PostMapping("/catalog")
     public ResponseEntity<CatalogResponse> getCatalog(@RequestBody CatalogRequest request) {
-        List<ListingDTO> listingDTOs = this.getListings();
+        List<ListingDTO> listingDTOs = this.getListings(request.getPage());
 
         return ResponseEntity.ok(new CatalogResponse(listingDTOs));
     }
@@ -130,20 +187,23 @@ public class Listing extends SessionizedController {
     }
 
     private List<ListingDTO> getNewListings() {
-        return this.getListings();
+        return this.getListings(1);
     }
 
     private List<ListingDTO> getTrendingListings() {
-        return this.getListings();
+        return this.getListings(1);
     }
 
     private List<ListingDTO> getPopularListings() {
-        return this.getListings();
+        return this.getListings(1);
     }
 
-    private List<ListingDTO> getListings() {
-        Pageable pageable = PageRequest.of(0, 10);
-        List<Listings> listingEntries = this.listingsRepository.findAll(pageable).stream().toList();
+    private List<ListingDTO> getListings(int page) {
+        Pageable pageable = PageRequest.of(page, 10);
+        List<Listings> listingEntries = this.listingsRepository
+                .findAllByStatus(ListingStatus.ACTIVE, pageable)
+                .stream()
+                .toList();
 
         List<ListingDTO> listingDTOs = new ArrayList<>();
 

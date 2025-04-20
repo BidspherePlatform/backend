@@ -13,4 +13,5 @@ public class CatalogRequest {
     private List<ProductCategories> categories;
     private long priceStart;
     private long priceEnd;
+    private int page;
 }

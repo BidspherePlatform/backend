@@ -20,6 +20,9 @@ public class Users {
     private UUID avatarId;
 
     @Column(nullable = false)
+    private String walletAddress;
+
+    @Column(nullable = false)
     private Date registrationDate;
 
     @Column(nullable = false)
@@ -31,6 +34,7 @@ public class Users {
         this.id = id;
         this.name = userDTO.getName();
         this.avatarId = userDTO.getAvatarId();
+        this.walletAddress = userDTO.getWalletAddress();
         this.registrationDate = userDTO.getRegistrationDate();
         this.platformAccess = userDTO.getPlatformAccess();
     }

@@ -4,31 +4,53 @@ import com.bidsphere.bidsphere.dtos.BidDTO;
 import com.bidsphere.bidsphere.entities.Bids;
 import com.bidsphere.bidsphere.entities.Listings;
 import com.bidsphere.bidsphere.entities.Sessions;
+import com.bidsphere.bidsphere.entities.Users;
 import com.bidsphere.bidsphere.payloads.BidRequest;
 import com.bidsphere.bidsphere.repositories.BidsRepository;
 import com.bidsphere.bidsphere.repositories.ListingsRepository;
+import com.bidsphere.bidsphere.repositories.UsersRepository;
+import com.bidsphere.bidsphere.services.EthereumService;
+import com.bidsphere.bidsphere.types.ListingStatus;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @CrossOrigin
 @RequestMapping("/api/bid")
 public class Bid extends SessionizedController {
 
+    private EthereumService ethereumService;
+
     private final BidsRepository bidsRepository;
     private final ListingsRepository listingsRepository;
+    private final UsersRepository usersRepository;
+
+    private HashMap<UUID, HashMap<UUID, Instant>> bids = new HashMap<>();
 
     public Bid(
             BidsRepository bidsRepository,
-            ListingsRepository listingsRepository
+            ListingsRepository listingsRepository,
+            UsersRepository usersRepository
     ) {
         this.bidsRepository = bidsRepository;
         this.listingsRepository = listingsRepository;
+        this.usersRepository = usersRepository;
+    }
+
+    @Autowired
+    public void setEthereumService(EthereumService ethereumService) {
+        this.ethereumService = ethereumService;
     }
 
     @PostMapping("/create")
@@ -38,9 +60,14 @@ public class Bid extends SessionizedController {
             @ApiResponse(responseCode = "401", description = "Unauthorized - session is missing or does not match user"),
             @ApiResponse(responseCode = "404", description = "Listing not found")
     })
-    public ResponseEntity<BidDTO> createBid(@RequestBody BidRequest bidRequest) {
+    public ResponseEntity<BidDTO> createBid(@RequestBody BidRequest bidRequest) throws Exception {
         Sessions session = this.getSession();
         if (session == null || session.getUserId() != bidRequest.getUserId()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Users> userQuery = this.usersRepository.findById(bidRequest.getUserId());
+        if (!userQuery.isPresent()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -49,7 +76,27 @@ public class Bid extends SessionizedController {
             return ResponseEntity.notFound().build();
         }
 
+        Users user = userQuery.get();
         Listings listing = listingsQuery.get();
+
+        if (user.getId() == listing.getSellerId() || listing.getStatus() != ListingStatus.ACTIVE) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (!this.bids.containsKey(listing.getId())) {
+            this.bids.put(listing.getId(), new HashMap<>());
+        }
+
+        if (this.bids.get(listing.getId()).containsKey(user.getId())) {
+            Instant bidInstant = this.bids.get(listing.getId()).get(user.getId());
+            Duration bidDuration = Duration.between(bidInstant, Instant.now());
+
+            if (Math.abs(bidDuration.toMinutes()) < 5) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            this.bids.get(listing.getId()).remove(user.getId());
+        }
 
         Optional<Bids> bidsQuery = this.bidsRepository.findLatestBidByListingId(bidRequest.getListingId());
         double highestBid = bidsQuery.isPresent() ? bidsQuery.get().getBidPrice() : listing.getStartingPrice();
@@ -58,7 +105,13 @@ public class Bid extends SessionizedController {
             return ResponseEntity.badRequest().build();
         }
 
-        // Perform smart contract
+        double userAmount = this.ethereumService.getUSDBalance(user.getWalletAddress());
+
+        if (bidRequest.getAmount() >= userAmount) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+        }
+
+        this.bids.get(listing.getId()).put(user.getId(), Instant.now());
 
         Bids currentBid = new Bids(bidRequest.getListingId(), bidRequest.getUserId(), bidRequest.getAmount());
         this.bidsRepository.save(currentBid);

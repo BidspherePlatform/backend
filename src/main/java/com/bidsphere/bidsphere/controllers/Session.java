@@ -44,7 +44,6 @@ public class Session extends SessionizedController {
         this.sellersRepository = sellersRepository;
     }
 
-
     @Autowired
     public void setPasswordHandler(PasswordHandler passwordHandler) {
         this.passwordHandler = passwordHandler;
@@ -82,12 +81,12 @@ public class Session extends SessionizedController {
     public ResponseEntity<LoginResponse> renewSession(@RequestBody TokenLoginRequest tokenLogin) {
         Optional<Sessions> sessionQuery = this.sessionsRepository.findByToken(tokenLogin.getToken());
         if (sessionQuery.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().build();
         }
 
         ProfileDTO profile = this.getProfile(sessionQuery.get().getUserId());
         if (profile == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().build();
         }
 
         String renewedToken = this.renewToken(sessionQuery.get().getUserId(), tokenLogin.getToken());
@@ -121,13 +120,6 @@ public class Session extends SessionizedController {
         }
 
         // Check platform access
-//        if (workerProfile.isPresent() && (
-//                workerProfile.get().isBanned()
-//                        || (workerProfile.get().getSuspension() != null
-//                        && workerProfile.get().getSuspension().toInstant().isAfter(dateRightNow))
-//        )) {
-//            return RESTResponse.failed("Worker cannot access platform!");
-//        }
 
         Sessions session = Sessions.forUser(userId);
         this.sessionsRepository.save(session);

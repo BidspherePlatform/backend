@@ -13,6 +13,7 @@ public class UserDTO {
     private UUID id;
     private String name;
     private UUID avatarId;
+    private String walletAddress;
     private Date registrationDate;
     private int platformAccess;
 
@@ -22,6 +23,7 @@ public class UserDTO {
         this.id = user.getId();
         this.name = user.getName();
         this.avatarId = user.getAvatarId();
+        this.walletAddress = user.getWalletAddress();
         this.registrationDate = user.getRegistrationDate();
         this.platformAccess = user.getPlatformAccess();
     }
