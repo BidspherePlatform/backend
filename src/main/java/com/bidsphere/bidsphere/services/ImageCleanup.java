@@ -38,7 +38,7 @@ public class ImageCleanup {
         }
 
         ArrayList<String> imagesToCleanup = new ArrayList<>();
-        for (String imageId : unclaimedImageIds.keySet()) {
+        for (String imageId : new HashSet<>(unclaimedImageIds.keySet())) {
             Date imageInsertDate = unclaimedImageIds.get(imageId);
             Instant fifteenMinutesAgo = Instant.now().minus(15, ChronoUnit.MINUTES);
             boolean isOld = imageInsertDate.toInstant().isBefore(fifteenMinutesAgo);
