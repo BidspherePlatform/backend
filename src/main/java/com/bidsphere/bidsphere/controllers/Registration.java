@@ -23,7 +23,6 @@ import java.util.UUID;
 @RequestMapping("/api/registration")
 public class Registration {
 
-    private static final int STARTER_REPUTATION = 1;
 
     private final CredentialsRepository credentialsRepository;
     private final UsersRepository usersRepository;
@@ -60,10 +59,7 @@ public class Registration {
         }
 
         Credentials credentialsEntry = new Credentials(userId, username, passwordHash, email);
-        UserDTO userDTO = (UserDTO) registrationRequest.getUserDetails();
-        userDTO.setRegistrationDate(new Date());
-        userDTO.setPlatformAccess(PlatformAccess.UNRESTRICTED);
-        userDTO.setReputation(STARTER_REPUTATION);
+        UserDTO userDTO = UserDTO.fromRegistrationDTO(userId, registrationRequest.getUserDetails());
 
         this.usersRepository.save(new Users(userId, userDTO));
         this.credentialsRepository.save(credentialsEntry);
