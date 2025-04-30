@@ -1,6 +1,7 @@
 package com.bidsphere.bidsphere.dtos;
 
 import com.bidsphere.bidsphere.entities.Users;
+import com.bidsphere.bidsphere.types.PlatformAccess;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,13 +10,11 @@ import java.util.UUID;
 
 @Setter
 @Getter
-public class UserDTO {
+public class UserDTO extends UserRegistrationDTO {
     private UUID id;
-    private String name;
-    private UUID avatarId;
-    private String walletAddress;
     private Date registrationDate;
-    private int platformAccess;
+    private PlatformAccess platformAccess;
+    private int reputation;
 
     public UserDTO() {}
 
@@ -26,5 +25,7 @@ public class UserDTO {
         this.walletAddress = user.getWalletAddress();
         this.registrationDate = user.getRegistrationDate();
         this.platformAccess = user.getPlatformAccess();
+        this.reputation = user.getReputation();
+        this.deliveryLocation = user.getDeliveryLocation();
     }
 }

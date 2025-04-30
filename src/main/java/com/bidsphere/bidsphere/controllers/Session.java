@@ -1,8 +1,5 @@
 package com.bidsphere.bidsphere.controllers;
 
-import com.bidsphere.bidsphere.dtos.CustomerDTO;
-import com.bidsphere.bidsphere.dtos.ProfileDTO;
-import com.bidsphere.bidsphere.dtos.SellerDTO;
 import com.bidsphere.bidsphere.dtos.UserDTO;
 import com.bidsphere.bidsphere.entities.*;
 import com.bidsphere.bidsphere.payloads.CredentialsLoginRequest;
@@ -29,19 +26,13 @@ public class Session extends SessionizedController {
 
     private final CredentialsRepository credentialsRepository;
     private final UsersRepository usersRepository;
-    private final CustomersRepository customersRepository;
-    private final SellersRepository sellersRepository;
 
     public Session(
             CredentialsRepository credentialsRepository,
-            UsersRepository usersRepository,
-            CustomersRepository customersRepository,
-            SellersRepository sellersRepository
+            UsersRepository usersRepository
     ) {
         this.credentialsRepository = credentialsRepository;
         this.usersRepository = usersRepository;
-        this.customersRepository = customersRepository;
-        this.sellersRepository = sellersRepository;
     }
 
     @Autowired
@@ -49,20 +40,14 @@ public class Session extends SessionizedController {
         this.passwordHandler = passwordHandler;
     }
 
-    ProfileDTO getProfile(UUID userId) {
+    UserDTO getProfile(UUID userId) {
         Optional<Users> userQuery = this.usersRepository.findById(userId);
-        Optional<Customers> customerQuery = this.customersRepository.findById(userId);
-        Optional<Sellers> sellerQuery = this.sellersRepository.findById(userId);
 
-        if (userQuery.isEmpty() || customerQuery.isEmpty()) {
+        if (userQuery.isEmpty()) {
             return null;
         }
 
-        return new ProfileDTO(
-                new UserDTO(userQuery.get()),
-                new CustomerDTO(customerQuery.get()),
-                new SellerDTO(sellerQuery.orElse(null))
-        );
+        return new UserDTO(userQuery.get());
     }
 
     private String renewToken(UUID userId, String token) {
@@ -84,7 +69,7 @@ public class Session extends SessionizedController {
             return ResponseEntity.badRequest().build();
         }
 
-        ProfileDTO profile = this.getProfile(sessionQuery.get().getUserId());
+        UserDTO profile = this.getProfile(sessionQuery.get().getUserId());
         if (profile == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -114,7 +99,7 @@ public class Session extends SessionizedController {
         }
 
         UUID userId = credentials.get().getUserId();
-        ProfileDTO profile = this.getProfile(userId);
+        UserDTO profile = this.getProfile(userId);
         if (profile == null) {
             return ResponseEntity.badRequest().build();
         }

@@ -5,6 +5,7 @@ import com.bidsphere.bidsphere.entities.Users;
 import com.bidsphere.bidsphere.repositories.SessionsRepository;
 import com.bidsphere.bidsphere.repositories.UsersRepository;
 import com.bidsphere.bidsphere.services.Tokenization;
+import com.bidsphere.bidsphere.types.PlatformAccess;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
@@ -58,6 +59,6 @@ public class SessionizedController {
 
         return !sessionExpired
                 && userQuery.isPresent()
-                && userQuery.get().getPlatformAccess() == 0;
+                && userQuery.get().getPlatformAccess() == PlatformAccess.UNRESTRICTED;
     }
 }

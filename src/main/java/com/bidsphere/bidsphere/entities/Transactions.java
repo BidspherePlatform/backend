@@ -1,9 +1,38 @@
 package com.bidsphere.bidsphere.entities;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import lombok.Getter;
+
 import java.util.UUID;
 
+@Getter
+@Entity
 public class Transactions {
+    @Id
     private UUID id;
-    private UUID userId;
+
+    @Column(nullable = false)
+    private UUID listingId;
+
+    @Column(nullable = false)
+    private UUID previousOwnerId;
+
+    @Column(nullable = false)
+    private UUID nextOwnerId;
+
+    @Column(nullable = false)
+    private UUID bidId;
+
+    protected Transactions() {}
+
+    public Transactions(Listings listing, Bids bid) {
+        this.id = UUID.randomUUID();
+        this.listingId = listing.getId();
+        this.previousOwnerId = listing.getSellerId();
+        this.nextOwnerId = bid.getUserId();
+        this.bidId = bid.getId();
+    }
 
 }

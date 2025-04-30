@@ -36,9 +36,9 @@ contract AuctionEscrow {
     }
 
     function createListing(address seller, bytes32 productUUID) external onlyOwner returns (uint) {
-        listingCounter++;
         listings[listingCounter] = Listing(seller, productUUID, true);
-        return listingCounter;
+        listingCounter++;
+        return listingCounter - 1;
     }
 
     function placeBid(uint listingId) external payable {

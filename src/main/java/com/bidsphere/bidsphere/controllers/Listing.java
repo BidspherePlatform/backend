@@ -9,7 +9,7 @@ import com.bidsphere.bidsphere.payloads.HomepageResponse;
 import com.bidsphere.bidsphere.repositories.BidsRepository;
 import com.bidsphere.bidsphere.repositories.ListingImagesRepository;
 import com.bidsphere.bidsphere.repositories.ListingsRepository;
-import com.bidsphere.bidsphere.repositories.SellersRepository;
+import com.bidsphere.bidsphere.repositories.UsersRepository;
 import com.bidsphere.bidsphere.types.ListingStatus;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -30,19 +30,19 @@ public class Listing extends SessionizedController {
 
     private final ListingsRepository listingsRepository;
     private final ListingImagesRepository listingImagesRepository;
-    private final SellersRepository sellersRepository;
     private final BidsRepository bidsRepository;
+    private final UsersRepository usersRepository;
 
     public Listing(
             ListingsRepository listingsRepository,
             ListingImagesRepository listingImagesRepository,
-            SellersRepository sellersRepository,
-            BidsRepository bidsRepository
+            BidsRepository bidsRepository,
+            UsersRepository usersRepository
     ) {
         this.listingsRepository = listingsRepository;
         this.listingImagesRepository = listingImagesRepository;
-        this.sellersRepository = sellersRepository;
         this.bidsRepository = bidsRepository;
+        this.usersRepository = usersRepository;
     }
 
     @PostMapping("/create")
@@ -53,10 +53,6 @@ public class Listing extends SessionizedController {
     public ResponseEntity<String> createListing(@RequestBody ListingDTO listingDTO) {
         Sessions session = this.getSession();
         if (session == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        if (!this.sellersRepository.existsById(listingDTO.getSellerId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -157,9 +153,9 @@ public class Listing extends SessionizedController {
             return ResponseEntity.notFound().build();
         }
 
-        Optional<Sellers> listingSeller = sellersRepository.findById(session.getUserId());
+        Optional<Users> listingSeller = this.usersRepository.findById(session.getUserId());
 
-        if (listingSeller.isEmpty() || listingSeller.get().getUserId() != session.getUserId()) {
+        if (listingSeller.isEmpty() || listingSeller.get().getId() != session.getUserId()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 

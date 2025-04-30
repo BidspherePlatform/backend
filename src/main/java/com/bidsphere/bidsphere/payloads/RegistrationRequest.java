@@ -1,13 +1,13 @@
 package com.bidsphere.bidsphere.payloads;
 
-import com.bidsphere.bidsphere.dtos.ProfileDTO;
+import com.bidsphere.bidsphere.dtos.UserRegistrationDTO;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class RegistrationRequest {
-    ProfileDTO profile;
+    UserRegistrationDTO userDetails;
     String username;
     String password;
     String email;

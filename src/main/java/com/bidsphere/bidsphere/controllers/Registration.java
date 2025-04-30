@@ -1,18 +1,13 @@
 package com.bidsphere.bidsphere.controllers;
 
-import com.bidsphere.bidsphere.dtos.ProfileDTO;
-import com.bidsphere.bidsphere.dtos.SellerDTO;
 import com.bidsphere.bidsphere.dtos.UserDTO;
 import com.bidsphere.bidsphere.entities.Credentials;
-import com.bidsphere.bidsphere.entities.Customers;
-import com.bidsphere.bidsphere.entities.Sellers;
 import com.bidsphere.bidsphere.entities.Users;
 import com.bidsphere.bidsphere.payloads.RegistrationRequest;
 import com.bidsphere.bidsphere.repositories.CredentialsRepository;
-import com.bidsphere.bidsphere.repositories.CustomersRepository;
-import com.bidsphere.bidsphere.repositories.SellersRepository;
 import com.bidsphere.bidsphere.repositories.UsersRepository;
 import com.bidsphere.bidsphere.services.PasswordHandler;
+import com.bidsphere.bidsphere.types.PlatformAccess;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,23 +23,19 @@ import java.util.UUID;
 @RequestMapping("/api/registration")
 public class Registration {
 
+    private static final int STARTER_REPUTATION = 1;
+
     private final CredentialsRepository credentialsRepository;
     private final UsersRepository usersRepository;
-    private final CustomersRepository customersRepository;
-    private final SellersRepository sellersRepository;
 
     private PasswordHandler passwordHandler;
 
     public Registration(
             CredentialsRepository credentialsRepository,
-            UsersRepository usersRepository,
-            CustomersRepository customersRepository,
-            SellersRepository sellersRepository
+            UsersRepository usersRepository
     ) {
         this.credentialsRepository = credentialsRepository;
         this.usersRepository = usersRepository;
-        this.customersRepository = customersRepository;
-        this.sellersRepository = sellersRepository;
     }
 
     @Autowired
@@ -69,26 +60,13 @@ public class Registration {
         }
 
         Credentials credentialsEntry = new Credentials(userId, username, passwordHash, email);
-        ProfileDTO profile = registrationRequest.getProfile();
-
-        UserDTO userDTO = profile.getUser();
+        UserDTO userDTO = (UserDTO) registrationRequest.getUserDetails();
         userDTO.setRegistrationDate(new Date());
-        userDTO.setPlatformAccess(0);
+        userDTO.setPlatformAccess(PlatformAccess.UNRESTRICTED);
+        userDTO.setReputation(STARTER_REPUTATION);
 
-        Users user = new Users(userId, userDTO);
-        Customers customer = new Customers(userId, profile.getCustomer());
-
-        this.usersRepository.save(user);
-        this.customersRepository.save(customer);
+        this.usersRepository.save(new Users(userId, userDTO));
         this.credentialsRepository.save(credentialsEntry);
-
-        if (profile.getSeller() != null) {
-            SellerDTO sellerDTO = profile.getSeller();
-            sellerDTO.setReputation(5);
-
-            Sellers seller = new Sellers(userId, profile.getSeller());
-            this.sellersRepository.save(seller);
-        }
 
         return ResponseEntity.ok(userId.toString());
     }

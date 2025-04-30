@@ -1,6 +1,7 @@
 package com.bidsphere.bidsphere.entities;
 
 import com.bidsphere.bidsphere.dtos.UserDTO;
+import com.bidsphere.bidsphere.types.PlatformAccess;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -26,7 +27,13 @@ public class Users {
     private Date registrationDate;
 
     @Column(nullable = false)
-    private int platformAccess;
+    private PlatformAccess platformAccess;
+
+    @Column(nullable = false)
+    private int reputation;
+
+    @Column(nullable = false)
+    private String deliveryLocation;
 
     protected Users() {}
 
@@ -37,5 +44,7 @@ public class Users {
         this.walletAddress = userDTO.getWalletAddress();
         this.registrationDate = userDTO.getRegistrationDate();
         this.platformAccess = userDTO.getPlatformAccess();
+        this.reputation = userDTO.getReputation();
+        this.deliveryLocation = userDTO.getDeliveryLocation();
     }
 }

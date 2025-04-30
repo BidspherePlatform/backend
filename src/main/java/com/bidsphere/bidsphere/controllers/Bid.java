@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,7 +35,7 @@ public class Bid extends SessionizedController {
     private final ListingsRepository listingsRepository;
     private final UsersRepository usersRepository;
 
-    private HashMap<UUID, HashMap<UUID, Instant>> bids = new HashMap<>();
+    private final HashMap<UUID, HashMap<UUID, Instant>> bids = new HashMap<>();
 
     public Bid(
             BidsRepository bidsRepository,
@@ -62,12 +61,12 @@ public class Bid extends SessionizedController {
     })
     public ResponseEntity<BidDTO> createBid(@RequestBody BidRequest bidRequest) throws Exception {
         Sessions session = this.getSession();
-        if (session == null || session.getUserId() != bidRequest.getUserId()) {
+        if (session == null || !session.getUserId().equals(bidRequest.getUserId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         Optional<Users> userQuery = this.usersRepository.findById(bidRequest.getUserId());
-        if (!userQuery.isPresent()) {
+        if (userQuery.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -79,7 +78,7 @@ public class Bid extends SessionizedController {
         Users user = userQuery.get();
         Listings listing = listingsQuery.get();
 
-        if (user.getId() == listing.getSellerId() || listing.getStatus() != ListingStatus.ACTIVE) {
+        if (user.getId().equals(listing.getSellerId()) || listing.getStatus() != ListingStatus.ACTIVE) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -91,15 +90,21 @@ public class Bid extends SessionizedController {
             Instant bidInstant = this.bids.get(listing.getId()).get(user.getId());
             Duration bidDuration = Duration.between(bidInstant, Instant.now());
 
-            if (Math.abs(bidDuration.toMinutes()) < 5) {
-                return ResponseEntity.badRequest().build();
+            if (Math.abs(bidDuration.toMinutes()) < 1) {
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
             }
 
             this.bids.get(listing.getId()).remove(user.getId());
         }
 
+        this.bids.get(listing.getId()).put(user.getId(), Instant.now());
+
         Optional<Bids> bidsQuery = this.bidsRepository.findLatestBidByListingId(bidRequest.getListingId());
-        double highestBid = bidsQuery.isPresent() ? bidsQuery.get().getBidPrice() : listing.getStartingPrice();
+        double highestBid = bidsQuery.map(Bids::getBidPrice).orElseGet(listing::getStartingPrice);
+
+        if (bidsQuery.isPresent() && bidsQuery.get().getUserId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).build();
+        }
 
         if (bidRequest.getAmount() <= highestBid) {
             return ResponseEntity.badRequest().build();

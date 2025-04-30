@@ -13,6 +13,7 @@ import java.util.UUID;
 public interface ListingsRepository extends CrudRepository<Listings, UUID> {
     List<Listings> findAll(Pageable pageable);
     ArrayList<Listings> findAllByStatus(ListingStatus status, Pageable pageable);
-    ArrayList<Listings> findAllBySellerIdAndStatusGreaterThan(UUID sellerId, ListingStatus statusIsGreaterThan, Pageable pageable);
+    ArrayList<Listings> findAllBySellerIdAndStatusGreaterThan(UUID sellerId, ListingStatus status, Pageable pageable);
+    ArrayList<Listings> findAllBySellerIdAndStatusLessThanEqual(UUID sellerId, ListingStatus status, Pageable pageable);
     List<Listings> findByEndDateBeforeAndStatusLessThanEqual(Date currentTime, ListingStatus status);
 }
