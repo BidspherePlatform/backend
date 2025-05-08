@@ -1,15 +1,11 @@
 package com.bidsphere.bidsphere.controllers;
 
-import com.bidsphere.bidsphere.dtos.BidDTO;
-import com.bidsphere.bidsphere.dtos.ListingDTO;
+import com.bidsphere.bidsphere.dtos.*;
 import com.bidsphere.bidsphere.entities.*;
 import com.bidsphere.bidsphere.payloads.CatalogRequest;
 import com.bidsphere.bidsphere.payloads.CatalogResponse;
 import com.bidsphere.bidsphere.payloads.HomepageResponse;
-import com.bidsphere.bidsphere.repositories.BidsRepository;
-import com.bidsphere.bidsphere.repositories.ListingImagesRepository;
-import com.bidsphere.bidsphere.repositories.ListingsRepository;
-import com.bidsphere.bidsphere.repositories.UsersRepository;
+import com.bidsphere.bidsphere.repositories.*;
 import com.bidsphere.bidsphere.types.ListingStatus;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -32,51 +28,85 @@ public class Listing extends SessionizedController {
     private final ListingImagesRepository listingImagesRepository;
     private final BidsRepository bidsRepository;
     private final UsersRepository usersRepository;
+    private final ProductsRepository productsRepository;
+    private final TransactionsRepository transactionsRepository;
 
     public Listing(
             ListingsRepository listingsRepository,
             ListingImagesRepository listingImagesRepository,
             BidsRepository bidsRepository,
-            UsersRepository usersRepository
+            UsersRepository usersRepository,
+            ProductsRepository productsRepository,
+            TransactionsRepository transactionsRepository
     ) {
         this.listingsRepository = listingsRepository;
         this.listingImagesRepository = listingImagesRepository;
         this.bidsRepository = bidsRepository;
         this.usersRepository = usersRepository;
+        this.productsRepository = productsRepository;
+        this.transactionsRepository = transactionsRepository;
     }
 
-    @PostMapping("/create")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Listing created successfully"),
-            @ApiResponse(responseCode = "422", description = "Invalid product authenticity - cannot create the listing")
-    })
-    public ResponseEntity<String> createListing(@RequestBody ListingDTO listingDTO) {
-        Sessions session = this.getSession();
-        if (session == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        UUID listingId = UUID.randomUUID();
-
-        if (listingDTO.getAuthenticity() < 3) {
-            return ResponseEntity.unprocessableEntity().build();
-        }
-
-        Listings listings = new Listings(listingId, listingDTO);
-        listings.setStartDate(new Date());
-        listings.setStatus(ListingStatus.ACTIVE);
-
-        this.listingsRepository.save(listings);
-
-        ArrayList<ListingImages> images = new ArrayList<>();
-        for (UUID listingImageId : listingDTO.getDisplayImageIds()) {
-            images.add(new ListingImages(listingId, listingImageId));
-        }
-
-        this.listingImagesRepository.saveAll(images);
-
-        return ResponseEntity.created(URI.create("/api/listing/" + listingId)).body(listingId.toString());
-    }
+//    @PostMapping("/create")
+//    @ApiResponses(value = {
+//            @ApiResponse(responseCode = "201", description = "Listing created successfully"),
+//            @ApiResponse(responseCode = "422", description = "Invalid product authenticity - cannot create the listing")
+//    })
+//    public ResponseEntity<String> createListing(@RequestBody ListingDTO listingDTO) {
+//        Sessions session = this.getSession();
+//        if (session == null) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        }
+//
+//        UUID listingId = UUID.randomUUID();
+//
+//        if (listingDTO.getAuthenticity() < 3) {
+//            return ResponseEntity.unprocessableEntity().build();
+//        }
+//
+//        Listings listings = new Listings(listingId, listingDTO);
+//        listings.setStartDate(new Date());
+//        listings.setStatus(ListingStatus.UNLISTED);
+//
+//        this.listingsRepository.save(listings);
+//
+//        ArrayList<ListingImages> images = new ArrayList<>();
+//        for (UUID listingImageId : listingDTO.getDisplayImageIds()) {
+//            images.add(new ListingImages(listingId, listingImageId));
+//        }
+//
+//        this.listingImagesRepository.saveAll(images);
+//
+//        return ResponseEntity.created(URI.create("/api/listing/" + listingId)).body(listingId.toString());
+//    }
+//
+//    @PostMapping("/publish")
+//    @ApiResponses(value = {})
+//    public ResponseEntity<ListingStatus> publishListing(@RequestBody ProductPublishDTO publishDTO) {
+//        Sessions session = this.getSession();
+//        if (session == null) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        }
+//
+//        Optional<Listings> listingQuery = this.listingsRepository.findById(publishDTO.getListingId());
+//        if (listingQuery.isEmpty()) {
+//            return ResponseEntity.notFound().build();
+//        }
+//
+//        Listings listing = listingQuery.get();
+//        if (listing.getSellerId() != session.getUserId()) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        }
+//
+//        if (listing.getStatus() != ListingStatus.UNLISTED) {
+//            return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build();
+//        }
+//
+//        listing.setStatus(ListingStatus.ACTIVE);
+//        this.listingsRepository.save(listing);
+//
+//        return ResponseEntity.ok(listing.getStatus());
+//    }
 
     @PatchMapping("/finish/{listingId}")
     public ResponseEntity<Null> finishListing(@PathVariable UUID listingId) {
@@ -131,9 +161,17 @@ public class Listing extends SessionizedController {
             return ResponseEntity.notFound().build();
         }
 
-        ArrayList<UUID> listingImages = this.getListingImageIds(listingId);
+        Listings listing = listingQuery.get();
+        Optional<Products> productEntry = this.productsRepository.findByProductId(listing.getProductId());
 
-        return ResponseEntity.ok(new ListingDTO(listingQuery.get(), listingImages, this.getLatestBid(listingId)));
+        if (productEntry.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        ArrayList<UUID> listingImages = this.getListingImageIds(listingId);
+        ProductDTO productDTO = new ProductDTO(productEntry.get());
+
+        return ResponseEntity.ok(new ListingDTO(listing, productDTO, listingImages, this.getLatestBid(listingId), this.getLatestTransaction(listingId)));
     }
 
     @DeleteMapping("/{listingId}")
@@ -204,8 +242,17 @@ public class Listing extends SessionizedController {
         List<ListingDTO> listingDTOs = new ArrayList<>();
 
         for (Listings listing : listingEntries) {
-            ArrayList<UUID> listingImageIds = this.getListingImageIds(listing.getId());
-            listingDTOs.add(new ListingDTO(listing, listingImageIds, this.getLatestBid(listing.getId())));
+            UUID listingId = listing.getListingId();
+            ArrayList<UUID> listingImageIds = this.getListingImageIds(listingId);
+            Optional<Products> productEntry = this.productsRepository.findByProductId(listing.getProductId());
+
+            if (productEntry.isEmpty()) {
+                continue;
+            }
+
+            ProductDTO productDTO = new ProductDTO(productEntry.get());
+
+            listingDTOs.add(new ListingDTO(listing, productDTO, listingImageIds, this.getLatestBid(listingId), this.getLatestTransaction(listingId)));
         }
 
         return listingDTOs;
@@ -213,8 +260,13 @@ public class Listing extends SessionizedController {
 
     private BidDTO getLatestBid(UUID listingId) {
         Optional<Bids> bidsQuery = this.bidsRepository.findLatestBidByListingId(listingId);
-        return bidsQuery.map(BidDTO::new).orElse(null);
 
+        return bidsQuery.map(BidDTO::new).orElse(null);
+    }
+
+    private TransactionDTO getLatestTransaction(UUID listingId) {
+        Optional<Transactions> transactionEntry = this.transactionsRepository.findByListingId(listingId);
+        return transactionEntry.map(TransactionDTO::new).orElse(null);
     }
 
     private ArrayList<UUID> getListingImageIds(UUID listingId) {

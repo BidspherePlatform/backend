@@ -14,28 +14,16 @@ import java.util.UUID;
 @Entity
 public class Listings {
     @Id
-    private UUID id;
+    private UUID listingId;
 
     @Column(nullable = false)
     private UUID sellerId;
 
     @Column(nullable = false)
-    private String name;
-
-    @Column(nullable = false)
-    private String description;
+    private UUID productId;
 
     @Column(nullable = false)
     private double startingPrice;
-
-    @Column(nullable = false)
-    private UUID mainImageId;
-
-    @Column(nullable = false)
-    private String category;
-
-    @Column(nullable = false)
-    private String subCategory;
 
     @Column(nullable = false)
     private Date startDate;
@@ -44,29 +32,21 @@ public class Listings {
     private Date endDate;
 
     @Column(nullable = false)
-    private boolean bestseller;
-
-    @Column(nullable = false)
     private ListingStatus status;
 
     @Column(nullable = false)
-    private int authenticity;
+    private UUID mainImageId;
 
     protected Listings() {}
 
-    public Listings(UUID id, ListingDTO listingDTO) {
-        this.id = id;
+    public Listings(ListingDTO listingDTO) {
+        this.listingId = listingDTO.getListingId();
         this.sellerId = listingDTO.getSellerId();
-        this.name = listingDTO.getName();
-        this.description = listingDTO.getDescription();
+        this.productId = listingDTO.getProduct().getProductId();
         this.startingPrice = listingDTO.getStartingPrice();
-        this.mainImageId = listingDTO.getMainImageId();
-        this.category = listingDTO.getCategory();
-        this.subCategory = listingDTO.getSubCategory();
         this.startDate = listingDTO.getStartDate();
         this.endDate = listingDTO.getEndDate();
-        this.bestseller = listingDTO.isBestseller();
         this.status = listingDTO.getStatus();
-        this.authenticity = listingDTO.getAuthenticity();
+        this.mainImageId = listingDTO.getMainImageId();
     }
 }

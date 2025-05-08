@@ -38,7 +38,7 @@ public class ListingScheduler {
                 .findByEndDateBeforeAndStatusLessThanEqual(now, ListingStatus.ACTIVE);
 
         for (Listings listing : completedListings) {
-            Optional<Bids> bidQuery = this.bidsRepository.findLatestBidByListingId(listing.getId());
+            Optional<Bids> bidQuery = this.bidsRepository.findLatestBidByListingId(listing.getListingId());
 
             if (bidQuery.isEmpty()) {
                 listing.setStatus(ListingStatus.ERRORED);

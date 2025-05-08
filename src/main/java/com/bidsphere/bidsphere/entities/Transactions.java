@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Getter;
 
+import java.util.Date;
 import java.util.UUID;
 
 @Getter
@@ -25,11 +26,14 @@ public class Transactions {
     @Column(nullable = false)
     private UUID bidId;
 
+    @Column(nullable = false)
+    private Date transactionDate;
+
     protected Transactions() {}
 
     public Transactions(Listings listing, Bids bid) {
         this.id = UUID.randomUUID();
-        this.listingId = listing.getId();
+        this.listingId = listing.getListingId();
         this.previousOwnerId = listing.getSellerId();
         this.nextOwnerId = bid.getUserId();
         this.bidId = bid.getId();

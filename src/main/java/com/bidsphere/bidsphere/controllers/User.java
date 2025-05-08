@@ -1,8 +1,6 @@
 package com.bidsphere.bidsphere.controllers;
 
-import com.bidsphere.bidsphere.dtos.BidDTO;
-import com.bidsphere.bidsphere.dtos.ListingDTO;
-import com.bidsphere.bidsphere.dtos.UserDTO;
+import com.bidsphere.bidsphere.dtos.*;
 import com.bidsphere.bidsphere.entities.*;
 import com.bidsphere.bidsphere.repositories.*;
 import com.bidsphere.bidsphere.types.ListingStatus;
@@ -29,19 +27,22 @@ public class User extends SessionizedController {
     private final ListingsRepository listingsRepository;
     private final ListingImagesRepository listingImagesRepository;
     private final TransactionsRepository transactionsRepository;
+    private final ProductsRepository productsRepository;
 
     public User(
             UsersRepository usersRepository,
             BidsRepository bidsRepository,
             ListingsRepository listingsRepository,
             ListingImagesRepository listingImagesRepository,
-            TransactionsRepository transactionsRepository
+            TransactionsRepository transactionsRepository,
+            ProductsRepository productsRepository
     ) {
         this.usersRepository = usersRepository;
         this.bidsRepository = bidsRepository;
         this.listingsRepository = listingsRepository;
         this.listingImagesRepository = listingImagesRepository;
         this.transactionsRepository = transactionsRepository;
+        this.productsRepository = productsRepository;
     }
 
     @PostMapping("/update")
@@ -95,7 +96,7 @@ public class User extends SessionizedController {
         return ResponseEntity.ok(listingDTOs);
     }
 
-    @GetMapping("/owned/{page}")
+    @GetMapping("/inventory/{page}")
     public ResponseEntity<ArrayList<ListingDTO>> getOwnedListings(@PathVariable int page) {
         Sessions session = this.getSession();
         if (session == null) {
@@ -131,11 +132,25 @@ public class User extends SessionizedController {
         return listingImageIds;
     }
 
+    private TransactionDTO getLatestTransaction(UUID listingId) {
+        Optional<Transactions> transactionEntry = this.transactionsRepository.findByListingId(listingId);
+        return transactionEntry.map(TransactionDTO::new).orElse(null);
+    }
+
     ListingDTO getListingDTO(Listings listing) {
+        Optional<Products> productEntry = this.productsRepository.findByProductId(listing.getProductId());
+        if (productEntry.isEmpty()) {
+            return null;
+        }
+
+        ProductDTO productDTO = new ProductDTO(productEntry.get());
+
         return new ListingDTO(
                 listing,
-                this.getListingImageIds(listing.getId()),
-                this.getLatestBid(listing.getId())
+                productDTO,
+                this.getListingImageIds(listing.getListingId()),
+                this.getLatestBid(listing.getListingId()),
+                this.getLatestTransaction(listing.getListingId())
         );
     }
 }

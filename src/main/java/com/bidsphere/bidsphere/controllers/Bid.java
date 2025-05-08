@@ -82,22 +82,22 @@ public class Bid extends SessionizedController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        if (!this.bids.containsKey(listing.getId())) {
-            this.bids.put(listing.getId(), new HashMap<>());
+        if (!this.bids.containsKey(listing.getListingId())) {
+            this.bids.put(listing.getListingId(), new HashMap<>());
         }
 
-        if (this.bids.get(listing.getId()).containsKey(user.getId())) {
-            Instant bidInstant = this.bids.get(listing.getId()).get(user.getId());
+        if (this.bids.get(listing.getListingId()).containsKey(user.getId())) {
+            Instant bidInstant = this.bids.get(listing.getListingId()).get(user.getId());
             Duration bidDuration = Duration.between(bidInstant, Instant.now());
 
             if (Math.abs(bidDuration.toMinutes()) < 1) {
                 return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
             }
 
-            this.bids.get(listing.getId()).remove(user.getId());
+            this.bids.get(listing.getListingId()).remove(user.getId());
         }
 
-        this.bids.get(listing.getId()).put(user.getId(), Instant.now());
+        this.bids.get(listing.getListingId()).put(user.getId(), Instant.now());
 
         Optional<Bids> bidsQuery = this.bidsRepository.findLatestBidByListingId(bidRequest.getListingId());
         double highestBid = bidsQuery.map(Bids::getBidPrice).orElseGet(listing::getStartingPrice);
@@ -116,7 +116,7 @@ public class Bid extends SessionizedController {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
         }
 
-        this.bids.get(listing.getId()).put(user.getId(), Instant.now());
+        this.bids.get(listing.getListingId()).put(user.getId(), Instant.now());
 
         Bids currentBid = new Bids(bidRequest.getListingId(), bidRequest.getUserId(), bidRequest.getAmount());
         this.bidsRepository.save(currentBid);
