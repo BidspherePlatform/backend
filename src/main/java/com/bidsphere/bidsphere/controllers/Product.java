@@ -77,6 +77,9 @@ public class Product extends SessionizedController {
         }
 
         UUID sellerId = session.getUserId();
+        System.out.println("PUBLISHING");
+        System.out.println(sellerId);
+        System.out.println(products.getOwnerId());
         if (products.getOwnerId() != sellerId) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
