@@ -35,6 +35,7 @@ public class Products {
 
     public Products(ProductDTO productDTO) {
         this.productId = productDTO.getProductId();
+        this.ownerId = productDTO.getOwnerId();
         this.name = productDTO.getName();
         this.description = productDTO.getDescription();
         this.category = productDTO.getCategory();
