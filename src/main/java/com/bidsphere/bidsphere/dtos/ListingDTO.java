@@ -25,6 +25,7 @@ public class ListingDTO extends ProductPublishDTO {
 
     public ListingDTO(Listings listing, ProductDTO product, ArrayList<UUID> displayImageIds, BidDTO latestBid, TransactionDTO latestTransaction) {
         this.listingId = listing.getListingId();
+        this.productId = product.getProductId();
         this.sellerId = listing.getSellerId();
         this.startingPrice = listing.getStartingPrice();
         this.startDate = listing.getStartDate();
