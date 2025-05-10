@@ -54,7 +54,11 @@ public class Registration {
         String passwordHash = this.passwordHandler.toHash(registrationRequest.getPassword());
         String email = registrationRequest.getEmail();
 
-        if (this.credentialsRepository.existsByUsername(username)) {
+        boolean existsByUsername = this.credentialsRepository.existsByUsername(username);
+        boolean existsByEmail = this.credentialsRepository.existsByEmail(email);
+        boolean existsByWalletAddress = this.usersRepository.existsByWalletAddress(registrationRequest.getUserDetails().getWalletAddress());
+
+        if (existsByUsername || existsByEmail || existsByWalletAddress) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
@@ -65,5 +69,20 @@ public class Registration {
         this.credentialsRepository.save(credentialsEntry);
 
         return ResponseEntity.ok(userId.toString());
+    }
+
+    @PostMapping("/verify/email")
+    public ResponseEntity<Boolean> verifyEmail(@RequestParam("email") String email) {
+        return ResponseEntity.ok(this.credentialsRepository.existsByEmail(email));
+    }
+
+    @PostMapping("/verify/username")
+    public ResponseEntity<Boolean> verifyUsername(@RequestParam("username") String username) {
+        return ResponseEntity.ok(this.credentialsRepository.existsByUsername(username));
+    }
+
+    @PostMapping("/verify/walletAddress")
+    public ResponseEntity<Boolean> verifyWalletAddress(@RequestParam("walletAddress") String walletAddress) {
+        return ResponseEntity.ok(this.usersRepository.existsByWalletAddress(walletAddress));
     }
 }
