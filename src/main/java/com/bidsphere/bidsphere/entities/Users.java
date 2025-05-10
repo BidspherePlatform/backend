@@ -4,11 +4,13 @@ import com.bidsphere.bidsphere.dtos.UserDTO;
 import com.bidsphere.bidsphere.types.PlatformAccess;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Date;
 import java.util.UUID;
 
 @Getter
+@Setter
 @Entity
 public class Users {
     @Id

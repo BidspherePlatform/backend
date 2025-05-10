@@ -13,6 +13,7 @@ import java.util.UUID;
 public interface CredentialsRepository extends CrudRepository<Credentials, UUID> {
     Optional<Credentials> findOneByUsername(@Param("username") String username);
     boolean existsByUsername(@Param("username") String username);
+    boolean existsByEmail(@Param("email") String email);
 
-    boolean existsByEmail(String email);
+    Optional<Credentials> findByUserId(UUID userId);
 }

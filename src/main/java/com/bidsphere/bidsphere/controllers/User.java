@@ -3,9 +3,11 @@ package com.bidsphere.bidsphere.controllers;
 import com.bidsphere.bidsphere.dtos.*;
 import com.bidsphere.bidsphere.entities.*;
 import com.bidsphere.bidsphere.repositories.*;
+import com.bidsphere.bidsphere.services.PasswordHandler;
 import com.bidsphere.bidsphere.types.ListingStatus;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -28,6 +30,10 @@ public class User extends SessionizedController {
     private final ListingImagesRepository listingImagesRepository;
     private final TransactionsRepository transactionsRepository;
     private final ProductsRepository productsRepository;
+    private final CredentialsRepository credentialsRepository;
+
+    private PasswordHandler passwordHandler;
+
 
     public User(
             UsersRepository usersRepository,
@@ -35,7 +41,8 @@ public class User extends SessionizedController {
             ListingsRepository listingsRepository,
             ListingImagesRepository listingImagesRepository,
             TransactionsRepository transactionsRepository,
-            ProductsRepository productsRepository
+            ProductsRepository productsRepository,
+            CredentialsRepository credentialsRepository
     ) {
         this.usersRepository = usersRepository;
         this.bidsRepository = bidsRepository;
@@ -43,10 +50,70 @@ public class User extends SessionizedController {
         this.listingImagesRepository = listingImagesRepository;
         this.transactionsRepository = transactionsRepository;
         this.productsRepository = productsRepository;
+        this.credentialsRepository = credentialsRepository;
+    }
+
+    @Autowired
+    public void setPasswordHandler(PasswordHandler passwordHandler) {
+        this.passwordHandler = passwordHandler;
     }
 
     @PostMapping("/update")
-    public ResponseEntity<Boolean> updateProfile() {
+    public ResponseEntity<Boolean> updateProfile(@RequestBody UserUpdateDTO userUpdateDTO) {
+        Sessions session = this.getSession();
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UUID userId = session.getUserId();
+        Optional<Users> userEntry = usersRepository.findById(userId);
+        if (userEntry.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Credentials> credentialsEntry = this.credentialsRepository.findByUserId(userId);
+        if (credentialsEntry.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Users user = userEntry.get();
+        Credentials credentials = credentialsEntry.get();
+        String newPasswordHash = this.passwordHandler.toHash(userUpdateDTO.getCurrentPassword());
+
+        boolean shouldUpdateEmail = userUpdateDTO.getEmail() != null;
+        boolean shouldUpdatePassword = userUpdateDTO.getCurrentPassword() != null;
+        boolean shouldUpdateAvatar = userUpdateDTO.getAvatarId() != null;
+        boolean shouldUpdateDeliveryLocation = userUpdateDTO.getDeliveryLocation() != null;
+        boolean shouldApplyChanges = this.passwordHandler.hashMatches(credentials.getPasswordHash(), newPasswordHash);
+
+        if (!shouldApplyChanges) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (shouldUpdateEmail) {
+            credentials.setEmail(userUpdateDTO.getEmail());
+        }
+
+        if (shouldUpdatePassword) {
+            credentials.setPasswordHash(newPasswordHash);
+        }
+
+        if (shouldUpdateAvatar) {
+            user.setAvatarId(userUpdateDTO.getAvatarId());
+        }
+
+        if (shouldUpdateDeliveryLocation) {
+            user.setDeliveryLocation(userUpdateDTO.getDeliveryLocation());
+        }
+
+        if (shouldUpdateAvatar || shouldUpdateDeliveryLocation) {
+            this.usersRepository.save(user);
+        }
+
+        if (shouldUpdateEmail || shouldUpdatePassword) {
+            this.credentialsRepository.save(credentials);
+        }
+
         return ResponseEntity.ok(true);
     }
 
