@@ -221,15 +221,15 @@ public class Listing extends SessionizedController {
     }
 
     private List<ListingDTO> getNewListings() {
-        return this.getListings(1);
+        return this.getListings(0);
     }
 
     private List<ListingDTO> getTrendingListings() {
-        return this.getListings(1);
+        return this.getListings(0);
     }
 
     private List<ListingDTO> getPopularListings() {
-        return this.getListings(1);
+        return this.getListings(0);
     }
 
     private List<ListingDTO> getListings(int page) {
