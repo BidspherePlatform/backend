@@ -73,16 +73,22 @@ public class Registration {
 
     @PostMapping("/verify/email")
     public ResponseEntity<Boolean> verifyEmail(@RequestBody String email) {
+        System.out.println(email);
+        System.out.println(this.credentialsRepository.existsByEmail(email));
         return ResponseEntity.ok(!this.credentialsRepository.existsByEmail(email));
     }
 
     @PostMapping("/verify/username")
     public ResponseEntity<Boolean> verifyUsername(@RequestBody String username) {
+        System.out.println(username);
+        System.out.println(this.credentialsRepository.existsByUsername(username));
         return ResponseEntity.ok(!this.credentialsRepository.existsByUsername(username));
     }
 
     @PostMapping("/verify/walletAddress")
     public ResponseEntity<Boolean> verifyWalletAddress(@RequestBody String walletAddress) {
+        System.out.println(walletAddress);
+        System.out.println(this.usersRepository.existsByWalletAddress(walletAddress));
         return ResponseEntity.ok(!this.usersRepository.existsByWalletAddress(walletAddress));
     }
 }
