@@ -9,6 +9,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface BidsRepository extends CrudRepository<Bids, UUID> {
-    @Query("SELECT b FROM Bids b WHERE b.listingId = :listingId ORDER BY b.bidPrice, b.bidDate DESC LIMIT 1")
+    @Query("SELECT b FROM Bids b WHERE b.listingId = :listingId ORDER BY b.bidDate DESC LIMIT 1")
     Optional<Bids> findLatestBidByListingId(@Param("listingId") UUID listingId);
 }

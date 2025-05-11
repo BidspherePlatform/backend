@@ -78,6 +78,11 @@ public class Bid extends SessionizedController {
         Users user = userQuery.get();
         Listings listing = listingsQuery.get();
 
+        Optional<Bids> latestBid = this.bidsRepository.findLatestBidByListingId(listing.getListingId());
+        if (latestBid.isPresent() && latestBid.get().getUserId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).build();
+        }
+
         if (user.getId().equals(listing.getSellerId()) || listing.getStatus() != ListingStatus.ACTIVE) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -99,13 +104,7 @@ public class Bid extends SessionizedController {
 
         this.bids.get(listing.getListingId()).put(user.getId(), Instant.now());
 
-        Optional<Bids> bidsQuery = this.bidsRepository.findLatestBidByListingId(bidRequest.getListingId());
-        double highestBid = bidsQuery.map(Bids::getBidPrice).orElseGet(listing::getStartingPrice);
-
-        if (bidsQuery.isPresent() && bidsQuery.get().getUserId().equals(user.getId())) {
-            return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).build();
-        }
-
+        double highestBid = latestBid.map(Bids::getBidPrice).orElseGet(listing::getStartingPrice);
         if (bidRequest.getAmount() <= highestBid) {
             return ResponseEntity.badRequest().build();
         }
