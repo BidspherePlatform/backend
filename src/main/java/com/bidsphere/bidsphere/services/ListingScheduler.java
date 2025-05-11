@@ -38,8 +38,7 @@ public class ListingScheduler {
     @Scheduled(fixedRate = 60000)
     public void fetchExpiredListings() throws Exception {
         Date now = new Date();
-        List<Listings> completedListings = listingsRepository
-                .findByEndDateBeforeAndStatusLessThanEqual(now, ListingStatus.ACTIVE);
+        List<Listings> completedListings = listingsRepository.findByEndDateBeforeAndStatusEquals(now, ListingStatus.ACTIVE);
 
         for (Listings listing : completedListings) {
 
