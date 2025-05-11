@@ -18,6 +18,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
+import java.util.UUID;
 
 
 @Service
@@ -39,6 +41,13 @@ public class EthereumService {
     public EthereumService(Web3j web3j) {
         this.web3j = web3j;
         this.contract = BidsphereBiddingEscrow.load(contractAddress, web3j, credentials, gasProvider);
+    }
+
+    public static byte[] uuidToBytes(UUID uuid) {
+        ByteBuffer bb = ByteBuffer.allocate(16);
+        bb.putLong(uuid.getMostSignificantBits());
+        bb.putLong(uuid.getLeastSignificantBits());
+        return bb.array();
     }
 
     public String getClientVersion() throws Exception {

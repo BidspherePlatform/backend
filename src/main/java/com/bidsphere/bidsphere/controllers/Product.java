@@ -74,7 +74,7 @@ public class Product extends SessionizedController {
         ProductDTO productDTO = new ProductDTO(productId, ownerId, productCreation);
         Products products = new Products(productDTO);
 
-        this.ethereumService.contract.registerProduct(productId.toString().getBytes(), user.getWalletAddress()).send();
+        this.ethereumService.contract.registerProduct(EthereumService.uuidToBytes(productId), user.getWalletAddress()).send();
         this.productsRepository.save(products);
 
         return ResponseEntity.created(URI.create("/api/product/" + productId)).body(productDTO);
@@ -120,8 +120,8 @@ public class Product extends SessionizedController {
 
         Users user = userEntry.get();
         this.ethereumService.contract.createListing(
-                listingId.toString().getBytes(),
-                products.getProductId().toString().getBytes(),
+                EthereumService.uuidToBytes(listingId),
+                EthereumService.uuidToBytes(products.getProductId()),
                 user.getWalletAddress(),
                 BigDecimal.valueOf(listing.getStartingPrice()).toBigInteger()
         ).send();

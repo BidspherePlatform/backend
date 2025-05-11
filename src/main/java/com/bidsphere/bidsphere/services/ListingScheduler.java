@@ -48,7 +48,7 @@ public class ListingScheduler {
                 continue;
             }
 
-            this.ethereumService.contract.endListing(listing.getListingId().toString().getBytes()).send();
+            this.ethereumService.contract.endListing(EthereumService.uuidToBytes(listing.getListingId())).send();
 
             Bids bid = bidQuery.get();
             Transactions transaction = new Transactions(listing, bid);
