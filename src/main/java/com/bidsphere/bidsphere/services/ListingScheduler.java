@@ -7,6 +7,7 @@ import com.bidsphere.bidsphere.repositories.BidsRepository;
 import com.bidsphere.bidsphere.repositories.ListingsRepository;
 import com.bidsphere.bidsphere.repositories.TransactionsRepository;
 import com.bidsphere.bidsphere.types.ListingStatus;
+import org.hibernate.TransactionException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -48,9 +49,14 @@ public class ListingScheduler {
                 continue;
             }
 
-            this.ethereumService.contract.endListing(EthereumService.uuidToBytes(listing.getListingId())).send();
+            try {
+                this.ethereumService.contract.endListing(EthereumService.uuidToBytes(listing.getListingId())).send();
+            } catch (Exception e) {
+                System.err.println("Revert reason: " + e.getMessage());
+            }
 
-            Bids bid = bidQuery.get();
+
+        Bids bid = bidQuery.get();
             Transactions transaction = new Transactions(listing, bid);
             this.transactionsRepository.save(transaction);
 

@@ -166,7 +166,26 @@ public class Listing extends SessionizedController {
     }
 
     private List<ListingDTO> getNewListings() {
-        return this.getListings(0);
+        Pageable pageable = PageRequest.of(0, 10);
+        ArrayList<Listings> listingEntries = this.listingsRepository.findLatestListings(pageable);
+
+        List<ListingDTO> listingDTOs = new ArrayList<>();
+
+        for (Listings listing : listingEntries) {
+            UUID listingId = listing.getListingId();
+            ArrayList<UUID> listingImageIds = this.getListingImageIds(listingId);
+            Optional<Products> productEntry = this.productsRepository.findByProductId(listing.getProductId());
+
+            if (productEntry.isEmpty()) {
+                continue;
+            }
+
+            ProductDTO productDTO = new ProductDTO(productEntry.get());
+
+            listingDTOs.add(new ListingDTO(listing, productDTO, listingImageIds, this.getLatestBid(listingId), this.getLatestTransaction(listingId)));
+        }
+
+        return listingDTOs;
     }
 
     private List<ListingDTO> getTrendingListings() {
