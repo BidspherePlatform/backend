@@ -42,6 +42,11 @@ public class ListingScheduler {
                 .findByEndDateBeforeAndStatusLessThanEqual(now, ListingStatus.ACTIVE);
 
         for (Listings listing : completedListings) {
+
+            if (transactionsRepository.existsByListingId(listing.getListingId())) {
+                continue;
+            }
+
             Optional<Bids> bidQuery = this.bidsRepository.findLatestBidByListingId(listing.getListingId());
 
             if (bidQuery.isEmpty()) {
@@ -55,8 +60,8 @@ public class ListingScheduler {
                 System.err.println("Revert reason: " + e.getMessage());
             }
 
+            Bids bid = bidQuery.get();
 
-        Bids bid = bidQuery.get();
             Transactions transaction = new Transactions(listing, bid);
             this.transactionsRepository.save(transaction);
 

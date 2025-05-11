@@ -11,4 +11,6 @@ public interface TransactionsRepository extends CrudRepository<Transactions, UUI
     ArrayList<Transactions> findAllByPreviousOwnerId(UUID previousOwnerId);
 
     Optional<Transactions> findByListingId(UUID listingId);
+
+    boolean existsByListingId(UUID listingId);
 }
