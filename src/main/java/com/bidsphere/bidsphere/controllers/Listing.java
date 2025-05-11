@@ -6,6 +6,7 @@ import com.bidsphere.bidsphere.payloads.CatalogRequest;
 import com.bidsphere.bidsphere.payloads.CatalogResponse;
 import com.bidsphere.bidsphere.payloads.HomepageResponse;
 import com.bidsphere.bidsphere.repositories.*;
+import com.bidsphere.bidsphere.services.EthereumService;
 import com.bidsphere.bidsphere.types.ListingStatus;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -30,6 +31,7 @@ public class Listing extends SessionizedController {
     private final UsersRepository usersRepository;
     private final ProductsRepository productsRepository;
     private final TransactionsRepository transactionsRepository;
+    private final EthereumService ethereumService;
 
     public Listing(
             ListingsRepository listingsRepository,
@@ -37,7 +39,8 @@ public class Listing extends SessionizedController {
             BidsRepository bidsRepository,
             UsersRepository usersRepository,
             ProductsRepository productsRepository,
-            TransactionsRepository transactionsRepository
+            TransactionsRepository transactionsRepository,
+            EthereumService ethereumService
     ) {
         this.listingsRepository = listingsRepository;
         this.listingImagesRepository = listingImagesRepository;
@@ -45,71 +48,11 @@ public class Listing extends SessionizedController {
         this.usersRepository = usersRepository;
         this.productsRepository = productsRepository;
         this.transactionsRepository = transactionsRepository;
+        this.ethereumService = ethereumService;
     }
 
-//    @PostMapping("/create")
-//    @ApiResponses(value = {
-//            @ApiResponse(responseCode = "201", description = "Listing created successfully"),
-//            @ApiResponse(responseCode = "422", description = "Invalid product authenticity - cannot create the listing")
-//    })
-//    public ResponseEntity<String> createListing(@RequestBody ListingDTO listingDTO) {
-//        Sessions session = this.getSession();
-//        if (session == null) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-//        }
-//
-//        UUID listingId = UUID.randomUUID();
-//
-//        if (listingDTO.getAuthenticity() < 3) {
-//            return ResponseEntity.unprocessableEntity().build();
-//        }
-//
-//        Listings listings = new Listings(listingId, listingDTO);
-//        listings.setStartDate(new Date());
-//        listings.setStatus(ListingStatus.UNLISTED);
-//
-//        this.listingsRepository.save(listings);
-//
-//        ArrayList<ListingImages> images = new ArrayList<>();
-//        for (UUID listingImageId : listingDTO.getDisplayImageIds()) {
-//            images.add(new ListingImages(listingId, listingImageId));
-//        }
-//
-//        this.listingImagesRepository.saveAll(images);
-//
-//        return ResponseEntity.created(URI.create("/api/listing/" + listingId)).body(listingId.toString());
-//    }
-//
-//    @PostMapping("/publish")
-//    @ApiResponses(value = {})
-//    public ResponseEntity<ListingStatus> publishListing(@RequestBody ProductPublishDTO publishDTO) {
-//        Sessions session = this.getSession();
-//        if (session == null) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-//        }
-//
-//        Optional<Listings> listingQuery = this.listingsRepository.findById(publishDTO.getListingId());
-//        if (listingQuery.isEmpty()) {
-//            return ResponseEntity.notFound().build();
-//        }
-//
-//        Listings listing = listingQuery.get();
-//        if (listing.getSellerId() != session.getUserId()) {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-//        }
-//
-//        if (listing.getStatus() != ListingStatus.UNLISTED) {
-//            return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build();
-//        }
-//
-//        listing.setStatus(ListingStatus.ACTIVE);
-//        this.listingsRepository.save(listing);
-//
-//        return ResponseEntity.ok(listing.getStatus());
-//    }
-
     @PatchMapping("/finish/{listingId}")
-    public ResponseEntity<Null> finishListing(@PathVariable UUID listingId) {
+    public ResponseEntity<Null> finishListing(@PathVariable UUID listingId) throws Exception {
         Sessions session = this.getSession();
         if (session == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -124,6 +67,8 @@ public class Listing extends SessionizedController {
         if (!listing.getSellerId().equals(session.getUserId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+
+        this.ethereumService.contract.endListing(listing.getListingId().toString().getBytes()).send();
 
         listing.setStatus(ListingStatus.CLOSED);
         this.listingsRepository.save(listing);
