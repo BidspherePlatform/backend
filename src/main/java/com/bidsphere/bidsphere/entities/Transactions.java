@@ -37,6 +37,7 @@ public class Transactions {
         this.previousOwnerId = listing.getSellerId();
         this.nextOwnerId = bid.getUserId();
         this.bidId = bid.getId();
+        this.transactionDate = new Date();
     }
 
 }
