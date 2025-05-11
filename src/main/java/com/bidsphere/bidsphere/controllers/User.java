@@ -78,13 +78,12 @@ public class User extends SessionizedController {
 
         Users user = userEntry.get();
         Credentials credentials = credentialsEntry.get();
-        String newPasswordHash = this.passwordHandler.toHash(userUpdateDTO.getCurrentPassword());
 
         boolean shouldUpdateEmail = userUpdateDTO.getEmail() != null;
-        boolean shouldUpdatePassword = userUpdateDTO.getCurrentPassword() != null;
+        boolean shouldUpdatePassword = userUpdateDTO.getNewPassword() != null;
         boolean shouldUpdateAvatar = userUpdateDTO.getAvatarId() != null;
         boolean shouldUpdateDeliveryLocation = userUpdateDTO.getDeliveryLocation() != null;
-        boolean shouldApplyChanges = this.passwordHandler.hashMatches(credentials.getPasswordHash(), newPasswordHash);
+        boolean shouldApplyChanges = this.passwordHandler.hashMatches(userUpdateDTO.getCurrentPassword(), credentials.getPasswordHash());
 
         if (!shouldApplyChanges) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -95,7 +94,7 @@ public class User extends SessionizedController {
         }
 
         if (shouldUpdatePassword) {
-            credentials.setPasswordHash(newPasswordHash);
+            credentials.setPasswordHash(this.passwordHandler.toHash(userUpdateDTO.getNewPassword()));
         }
 
         if (shouldUpdateAvatar) {
