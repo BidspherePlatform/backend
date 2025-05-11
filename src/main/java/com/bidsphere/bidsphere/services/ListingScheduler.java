@@ -20,19 +20,22 @@ public class ListingScheduler {
     private final ListingsRepository listingsRepository;
     private final BidsRepository bidsRepository;
     private final TransactionsRepository transactionsRepository;
+    private final EthereumService ethereumService;
 
     public ListingScheduler(
             ListingsRepository listingsRepository,
             BidsRepository bidsRepository,
-            TransactionsRepository transactionsRepository
+            TransactionsRepository transactionsRepository,
+            EthereumService ethereumService
     ) {
         this.listingsRepository = listingsRepository;
         this.bidsRepository = bidsRepository;
         this.transactionsRepository = transactionsRepository;
+        this.ethereumService = ethereumService;
     }
 
     @Scheduled(fixedRate = 60000)
-    public void fetchExpiredListings() {
+    public void fetchExpiredListings() throws Exception {
         Date now = new Date();
         List<Listings> completedListings = listingsRepository
                 .findByEndDateBeforeAndStatusLessThanEqual(now, ListingStatus.ACTIVE);
@@ -45,9 +48,10 @@ public class ListingScheduler {
                 continue;
             }
 
+            this.ethereumService.contract.endListing(listing.getListingId().toString().getBytes()).send();
+
             Bids bid = bidQuery.get();
             Transactions transaction = new Transactions(listing, bid);
-
             this.transactionsRepository.save(transaction);
 
             listing.setSellerId(bid.getUserId());

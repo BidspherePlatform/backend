@@ -1,11 +1,16 @@
 package com.bidsphere.bidsphere.services;
 
+import com.bidsphere.contracts.BidsphereBiddingEscrow;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.stereotype.Service;
+import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.Web3ClientVersion;
+import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.gas.StaticGasProvider;
 import org.web3j.utils.Convert;
 
 import java.math.BigInteger;
@@ -18,10 +23,22 @@ import java.net.http.HttpResponse;
 @Service
 public class EthereumService {
 
+    private static final Dotenv dotenv = Dotenv.load();
+
     private final Web3j web3j;
+
+    private final String contractAddress = dotenv.get("CONTRACT_ADDRESS");
+    private final Credentials credentials = Credentials.create(dotenv.get("HOLDER_PRIVATE_KEY"));
+    private final ContractGasProvider gasProvider = new StaticGasProvider(
+            Convert.toWei("20", Convert.Unit.GWEI).toBigInteger(),
+            BigInteger.valueOf(5_000_000)
+    );
+
+    public final BidsphereBiddingEscrow contract;
 
     public EthereumService(Web3j web3j) {
         this.web3j = web3j;
+        this.contract = BidsphereBiddingEscrow.load(contractAddress, web3j, credentials, gasProvider);
     }
 
     public String getClientVersion() throws Exception {
