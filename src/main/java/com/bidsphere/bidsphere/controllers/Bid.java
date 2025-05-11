@@ -122,4 +122,17 @@ public class Bid extends SessionizedController {
 
         return ResponseEntity.ok(new BidDTO(currentBid));
     }
+
+    @GetMapping("/previous/{listingId}")
+    public ResponseEntity<BidDTO> previousBid(@PathVariable UUID listingId) {
+        Sessions session = this.getSession();
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Bids> bidsEntry = this.bidsRepository.findLatestBidByUserIdOnListing(session.getUserId(), listingId);
+
+        return bidsEntry.map(value -> ResponseEntity.ok(new BidDTO(value))).orElse(null);
+
+    }
 }
