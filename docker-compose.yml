@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "2278:2278"
+    depends_on:
+      - db
+    volumes:
+      - ./src/main/resources/cdn:/home/ubuntu/cdn
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./src/main/resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    ports:
+      - "2280:2280"
+      - "2281:2281"
+      - "2282:2282"
+      - "2283:2283"
+    volumes:
+      - ./src/main/resources/cdn:/home/ubuntu/cdn  # Mount the same cdn directory for NGINX to serve
+      - ./src/main/resources/cdn.conf:/etc/nginx/conf.d/default.conf
