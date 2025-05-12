@@ -55,27 +55,27 @@ contract BidsphereBiddingEscrow {
         initialized[listingId] = true;
     }
 
-    function placeBid(bytes16 listingId, uint256 bidAmount) external payable onlyBeforeEnd(listingId) {
+    function placeBid(bytes16 listingId) external payable onlyBeforeEnd(listingId) {
         require(initialized[listingId], "Listing does not exist");
         Listing storage listing = listings[listingId];
         Bid storage previous = listing.bids[msg.sender];
 
+        require(msg.value > 0, "Bid must be greater than zero");
         require(msg.sender != listing.sellerWallet, "Seller cannot bid on own listing");
         require(msg.sender != listing.lastBidder, "Bidder must not create consecutive bids");
-        require(bidAmount > previous.amount, "New bid must be higher than previous bid");
-        require(bidAmount > listing.highestBid, "Bid must be higher than current highest");
-
-        uint256 requiredPayment = bidAmount - previous.amount;
-        require(msg.value == requiredPayment, "Send the correct difference only");
+        require(msg.value > previous.amount, "New bid must be higher than previous bid");
+        require(msg.value > listing.highestBid, "Bid must be higher than current highest");
 
         if (previous.amount == 0) {
             listing.bidders.push(msg.sender);
+        } else {
+            payable(msg.sender).transfer(previous.amount);
         }
 
-        previous.amount = bidAmount;
+        previous.amount = msg.value;
         previous.refunded = false;
 
-        listing.highestBid = bidAmount;
+        listing.highestBid = msg.value;
         listing.highestBidder = msg.sender;
         listing.lastBidder = msg.sender;
     }
