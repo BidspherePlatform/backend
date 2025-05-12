@@ -13,21 +13,17 @@ contract BidsphereBiddingEscrow {
         uint256 startingPrice;
         address highestBidder;
         uint256 highestBid;
+        address lastBidder;
         bool ended;
         mapping(address => Bid) bids;
         address[] bidders;
     }
 
-    address public holdingAccount;
-
     mapping(bytes16 => address) public productOwner;
-
     mapping(bytes16 => Listing) public listings;
     mapping(bytes16 => bool) public initialized;
 
-    constructor(address _holdingAccount) {
-        holdingAccount = _holdingAccount;
-    }
+    constructor() {}
 
     modifier onlyBeforeEnd(bytes16 listingId) {
         require(!listings[listingId].ended, "Auction already ended");
@@ -50,8 +46,7 @@ contract BidsphereBiddingEscrow {
         require(productOwner[productId] == sellerWallet, "Seller must own the product");
         require(startingPrice > 0, "Starting price must be greater than zero");
 
-
-    Listing storage l = listings[listingId];
+        Listing storage l = listings[listingId];
         l.productId = productId;
         l.sellerWallet = sellerWallet;
         l.startingPrice = startingPrice;
@@ -66,6 +61,7 @@ contract BidsphereBiddingEscrow {
         Bid storage previous = listing.bids[msg.sender];
 
         require(msg.sender != listing.sellerWallet, "Seller cannot bid on own listing");
+        require(msg.sender != listing.lastBidder, "Bidder must not create consecutive bids");
         require(bidAmount > previous.amount, "New bid must be higher than previous bid");
         require(bidAmount > listing.highestBid, "Bid must be higher than current highest");
 
@@ -79,10 +75,9 @@ contract BidsphereBiddingEscrow {
         previous.amount = bidAmount;
         previous.refunded = false;
 
-        payable(holdingAccount).transfer(requiredPayment);
-
         listing.highestBid = bidAmount;
         listing.highestBidder = msg.sender;
+        listing.lastBidder = msg.sender;
     }
 
     function endListing(bytes16 listingId) external {
