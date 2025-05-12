@@ -51,7 +51,7 @@ contract BidsphereBiddingEscrow {
         require(startingPrice > 0, "Starting price must be greater than zero");
 
 
-    Listing storage l = listings[listingId];
+        Listing storage l = listings[listingId];
         l.productId = productId;
         l.sellerWallet = sellerWallet;
         l.startingPrice = startingPrice;

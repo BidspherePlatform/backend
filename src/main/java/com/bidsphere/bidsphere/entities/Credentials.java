@@ -23,6 +23,9 @@ public class Credentials {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(nullable = false)
+    private boolean emailVerified;
+
     protected Credentials() {}
 
     public Credentials(UUID userId, String username, String passwordHash, String email) {

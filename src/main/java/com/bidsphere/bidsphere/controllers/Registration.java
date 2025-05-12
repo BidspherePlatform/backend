@@ -3,11 +3,13 @@ package com.bidsphere.bidsphere.controllers;
 import com.bidsphere.bidsphere.dtos.UserDTO;
 import com.bidsphere.bidsphere.entities.Credentials;
 import com.bidsphere.bidsphere.entities.Users;
+import com.bidsphere.bidsphere.entities.VerificationTokens;
 import com.bidsphere.bidsphere.payloads.RegistrationRequest;
 import com.bidsphere.bidsphere.repositories.CredentialsRepository;
 import com.bidsphere.bidsphere.repositories.UsersRepository;
+import com.bidsphere.bidsphere.repositories.VerificationTokensRepository;
+import com.bidsphere.bidsphere.services.EmailService;
 import com.bidsphere.bidsphere.services.PasswordHandler;
-import com.bidsphere.bidsphere.types.PlatformAccess;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
 import java.util.UUID;
 
 @RestController
@@ -23,23 +24,31 @@ import java.util.UUID;
 @RequestMapping("/api/registration")
 public class Registration {
 
-
     private final CredentialsRepository credentialsRepository;
     private final UsersRepository usersRepository;
+    private final VerificationTokensRepository verificationTokensRepository;
 
     private PasswordHandler passwordHandler;
+    private EmailService emailService;
 
     public Registration(
             CredentialsRepository credentialsRepository,
-            UsersRepository usersRepository
+            UsersRepository usersRepository,
+            VerificationTokensRepository verificationTokensRepository
     ) {
         this.credentialsRepository = credentialsRepository;
         this.usersRepository = usersRepository;
+        this.verificationTokensRepository = verificationTokensRepository;
     }
 
     @Autowired
     public void setPasswordHandler(PasswordHandler passwordHandler) {
         this.passwordHandler = passwordHandler;
+    }
+
+    @Autowired
+    public void setEmailService(EmailService emailService) {
+        this.emailService = emailService;
     }
 
     @PostMapping("/create")
@@ -64,6 +73,18 @@ public class Registration {
 
         Credentials credentialsEntry = new Credentials(userId, username, passwordHash, email);
         UserDTO userDTO = UserDTO.fromRegistrationDTO(userId, registrationRequest.getUserDetails());
+
+        try {
+            VerificationTokens token = new VerificationTokens();
+            token.setUserId(userId);
+            token.setToken(UUID.randomUUID());
+            token.setExpiryDate(java.time.LocalDateTime.now().plusHours(24));
+            this.verificationTokensRepository.save(token);
+
+            this.emailService.sendVerificationEmail(email, userId.toString(), token.getToken().toString());
+        } catch (Exception e) {
+            System.err.println("Failed to send verification email: " + e.getMessage());
+        }
 
         this.usersRepository.save(new Users(userId, userDTO));
         this.credentialsRepository.save(credentialsEntry);

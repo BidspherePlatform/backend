@@ -16,4 +16,5 @@ public interface CredentialsRepository extends CrudRepository<Credentials, UUID>
     boolean existsByEmail(@Param("email") String email);
 
     Optional<Credentials> findByUserId(UUID userId);
+    Optional<Credentials> findByEmail(String email);
 }
