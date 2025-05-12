@@ -7,7 +7,6 @@ import com.bidsphere.bidsphere.repositories.BidsRepository;
 import com.bidsphere.bidsphere.repositories.ListingsRepository;
 import com.bidsphere.bidsphere.repositories.TransactionsRepository;
 import com.bidsphere.bidsphere.types.ListingStatus;
-import org.hibernate.TransactionException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -49,7 +48,7 @@ public class ListingScheduler {
             Optional<Bids> bidQuery = this.bidsRepository.findLatestBidByListingId(listing.getListingId());
 
             if (bidQuery.isEmpty()) {
-                listing.setStatus(ListingStatus.ERRORED);
+                listing.setStatus(ListingStatus.UNLISTED);
                 continue;
             }
 
