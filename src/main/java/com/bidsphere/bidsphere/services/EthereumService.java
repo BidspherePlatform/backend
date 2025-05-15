@@ -35,11 +35,7 @@ public class EthereumService {
 
     private final String contractAddress = dotenv.get("CONTRACT_ADDRESS");
     private final Credentials credentials = Credentials.create(dotenv.get("HOLDER_PRIVATE_KEY"));
-    private final String gasPrice = dotenv.get("GAS_PRICE") != null ? dotenv.get( "GAS_PRICE") : "10";
-    private final ContractGasProvider gasProvider = new StaticGasProvider(
-            Convert.toWei(this.gasPrice, Convert.Unit.GWEI).toBigInteger(),
-            BigInteger.valueOf(50_000)
-    );
+    private final ContractGasProvider gasProvider = new DefaultGasProvider();
 
     public final BidsphereBiddingEscrow contract;
 
