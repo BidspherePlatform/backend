@@ -107,7 +107,7 @@ public class Bid extends SessionizedController {
 
         this.bids.get(listing.getListingId()).put(user.getId(), Instant.now());
 
-        Optional<Transaction> transactionQuery = this.ethereumService.getTransactionByHash(listing.getTransactionHash());
+        Optional<Transaction> transactionQuery = this.ethereumService.getTransactionByHash(bidRequest.getTransactionHash());
         if (transactionQuery.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
