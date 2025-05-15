@@ -117,6 +117,8 @@ public class Bid extends SessionizedController {
         String senderTarget = transaction.getTo();
 
         System.out.println("Received transaction from " + senderWallet + " to " + senderTarget + " with transaction [" + transaction.getHash() + "]");
+        System.out.println("Wallet equals " + user.getWalletAddress() + " = " + senderWallet + "? " + senderWallet.equals(user.getWalletAddress()));
+        System.out.println("Contract equals " + this.ethereumService.contract.getContractAddress() + " = " + senderTarget + "? " + senderTarget.equals(this.ethereumService.contract.getContractAddress()));
 
         if (!senderWallet.equals(user.getWalletAddress()) || !this.ethereumService.matchesContractAddress(senderTarget)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
