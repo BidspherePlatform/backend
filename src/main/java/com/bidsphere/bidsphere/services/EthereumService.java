@@ -38,7 +38,7 @@ public class EthereumService {
     private final String gasPrice = dotenv.get("GAS_PRICE") != null ? dotenv.get( "GAS_PRICE") : "10";
     private final ContractGasProvider gasProvider = new StaticGasProvider(
             Convert.toWei(this.gasPrice, Convert.Unit.GWEI).toBigInteger(),
-            BigInteger.valueOf(10_000)
+            BigInteger.valueOf(50_000)
     );
 
     public final BidsphereBiddingEscrow contract;
