@@ -11,6 +11,7 @@ public class BidRequest {
     private UUID listingId;
     private UUID userId;
     private long amount;
+    private String transactionHash;
 
     public BidRequest() {}
 }

@@ -9,6 +9,7 @@ import com.bidsphere.bidsphere.repositories.TransactionsRepository;
 import com.bidsphere.bidsphere.types.ListingStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import java.util.Date;
 import java.util.List;
@@ -52,15 +53,22 @@ public class ListingScheduler {
                 continue;
             }
 
+            TransactionReceipt receipt;
             try {
-                this.ethereumService.contract.endListing(EthereumService.uuidToBytes(listing.getListingId())).send();
+                System.out.println("Auto ending listing [" + listing.getListingId() + "]");
+                receipt = this.ethereumService.contract
+                        .endListing(EthereumService.uuidToBytes(listing.getListingId()))
+                        .send();
+
+                System.out.println("Auto ended listing [" + listing.getListingId() + "] with transaction [" + receipt.getTransactionHash() + "]");
             } catch (Exception e) {
                 System.err.println("Revert reason: " + e.getMessage());
+                return;
             }
 
             Bids bid = bidQuery.get();
 
-            Transactions transaction = new Transactions(listing, bid);
+            Transactions transaction = new Transactions(listing, bid, receipt.getTransactionHash());
             this.transactionsRepository.save(transaction);
 
             listing.setSellerId(bid.getUserId());

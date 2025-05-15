@@ -16,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.web3j.protocol.core.RemoteFunctionCall;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import java.net.URI;
 import java.util.*;
@@ -68,32 +70,27 @@ public class Listing extends SessionizedController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        this.ethereumService.contract.endListing(listing.getListingId().toString().getBytes()).send();
-
-        listing.setStatus(ListingStatus.CLOSED);
-        this.listingsRepository.save(listing);
-
-        return ResponseEntity.ok().build();
-    }
-
-    @PatchMapping("/terminate/{listingId}")
-    public ResponseEntity<String> terminateListing(@PathVariable UUID listingId) {
-        Sessions session = this.getSession();
-        if (session == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        Optional<Bids> bidQuery = this.bidsRepository.findLatestBidByListingId(listing.getListingId());
+        if (bidQuery.isEmpty()) {
+            listing.setStatus(ListingStatus.UNLISTED);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         }
 
-        Optional<Listings> listingQuery = this.listingsRepository.findById(listingId);
-        if (listingQuery.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+        System.out.println("Ending listing (" + listingId + ")");
 
-        Listings listing = listingQuery.get();
-        if (!listing.getSellerId().equals(session.getUserId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        Bids bid = bidQuery.get();
+        TransactionReceipt receipt = this.ethereumService.contract
+                .endListing(EthereumService.uuidToBytes(listing.getListingId()))
+                .send();
 
-        listing.setStatus(ListingStatus.TERMINATED);
+
+        System.out.println("Ended listing (" + listingId + ") with transaction [" + receipt.getTransactionHash() + "]");
+
+        Transactions transaction = new Transactions(listing, bid, receipt.getTransactionHash());
+        this.transactionsRepository.save(transaction);
+
+        listing.setSellerId(bid.getUserId());
+        listing.setStatus(ListingStatus.UNLISTED);
         this.listingsRepository.save(listing);
 
         return ResponseEntity.ok().build();

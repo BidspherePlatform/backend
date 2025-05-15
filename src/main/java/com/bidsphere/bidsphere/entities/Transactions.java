@@ -27,12 +27,16 @@ public class Transactions {
     private UUID bidId;
 
     @Column(nullable = false)
+    private String transactionHash;
+
+    @Column(nullable = false)
     private Date transactionDate;
 
     protected Transactions() {}
 
-    public Transactions(Listings listing, Bids bid) {
+    public Transactions(Listings listing, Bids bid, String transactionHash) {
         this.id = UUID.randomUUID();
+        this.transactionHash = transactionHash;
         this.listingId = listing.getListingId();
         this.previousOwnerId = listing.getSellerId();
         this.nextOwnerId = bid.getUserId();

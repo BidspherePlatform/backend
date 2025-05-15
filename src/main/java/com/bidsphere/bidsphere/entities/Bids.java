@@ -1,6 +1,7 @@
 package com.bidsphere.bidsphere.entities;
 
 import com.bidsphere.bidsphere.dtos.BidDTO;
+import com.bidsphere.bidsphere.payloads.BidRequest;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -25,13 +26,17 @@ public class Bids {
     @Column(nullable = false)
     private Date bidDate;
 
+    @Column(nullable = false)
+    private String transactionHash;
+
     protected Bids() {}
 
-    public Bids(UUID listingId, UUID userId, double bidPrice) {
+    public Bids(BidRequest bidRequest) {
         this.id = UUID.randomUUID();
-        this.listingId = listingId;
-        this.userId = userId;
-        this.bidPrice = bidPrice;
+        this.listingId = bidRequest.getListingId();
+        this.userId = bidRequest.getUserId();
+        this.bidPrice = bidRequest.getAmount();
+        this.transactionHash = bidRequest.getTransactionHash();
         this.bidDate = new Date();
     }
 
@@ -41,5 +46,6 @@ public class Bids {
         this.userId = bidDTO.getUserId();
         this.bidPrice = bidDTO.getBidPrice();
         this.bidDate = bidDTO.getBidDate();
+        this.transactionHash = bidDTO.getTransactionHash();
     }
 }

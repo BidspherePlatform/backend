@@ -12,6 +12,7 @@ import java.util.UUID;
 public class ProductDTO extends ProductCreationDTO {
     private UUID productId;
     private UUID ownerId;
+    private String transactionHash;
 
     public ProductDTO() {}
 
@@ -22,11 +23,13 @@ public class ProductDTO extends ProductCreationDTO {
         this.description = product.getDescription();
         this.category = product.getCategory();
         this.subCategory = product.getSubCategory();
+        this.transactionHash = product.getTransactionHash();
     }
 
-    public ProductDTO(UUID productId, UUID ownerId, ProductCreationDTO creationDTO) {
+    public ProductDTO(UUID productId, UUID ownerId, ProductCreationDTO creationDTO, String transactionHash) {
         this.productId = productId;
         this.ownerId = ownerId;
+        this.transactionHash = transactionHash;
         this.name = creationDTO.getName();
         this.description = creationDTO.getDescription();
         this.category = creationDTO.getCategory();

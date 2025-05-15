@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -66,15 +67,19 @@ public class Product extends SessionizedController {
         }
 
         Users user = userEntry.get();
-
         if (Objects.equals(user.getWalletAddress(), "")) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
         }
 
-        ProductDTO productDTO = new ProductDTO(productId, ownerId, productCreation);
-        Products products = new Products(productDTO);
+        System.out.println("Creating product (" + productId + ") [" + productCreation.getName() + "]");
+        TransactionReceipt receipt = this.ethereumService.contract
+                .registerProduct(EthereumService.uuidToBytes(productId), user.getWalletAddress())
+                .send();
 
-        this.ethereumService.contract.registerProduct(EthereumService.uuidToBytes(productId), user.getWalletAddress()).send();
+        System.out.println("Created product (" + productId + ") [" + productCreation.getName() + "] with transaction [" + receipt.getTransactionHash() + "]");
+
+        ProductDTO productDTO = new ProductDTO(productId, ownerId, productCreation, receipt.getTransactionHash());
+        Products products = new Products(productDTO);
         this.productsRepository.save(products);
 
         return ResponseEntity.created(URI.create("/api/product/" + productId)).body(productDTO);
@@ -109,22 +114,25 @@ public class Product extends SessionizedController {
         }
 
         UUID listingId = UUID.randomUUID();
+        System.out.println("Publishing product listing (" + listingId + ") [" + products.getName() + "]");
+        Users user = userEntry.get();
+        TransactionReceipt receipt = this.ethereumService.contract.createListing(
+                EthereumService.uuidToBytes(listingId),
+                EthereumService.uuidToBytes(products.getProductId()),
+                user.getWalletAddress(),
+                BigDecimal.valueOf(productPublish.getStartingPrice()).toBigInteger()
+        ).send();
+
+        System.out.println("Created product listing (" + listingId + ") [" + products.getName() + "] with transaction [" + receipt.getTransactionHash() + "]");
+
         ProductDTO productDTO = new ProductDTO(products);
-        ListingDTO listingDTO = new ListingDTO(listingId, sellerId, productPublish, productDTO);
+        ListingDTO listingDTO = new ListingDTO(listingId, sellerId, productPublish, productDTO, receipt.getTransactionHash());
         Listings listing = new Listings(listingDTO);
 
         ArrayList<ListingImages> images = new ArrayList<>();
         for (UUID listingImageId : productPublish.getDisplayImageIds()) {
             images.add(new ListingImages(listingId, listingImageId));
         }
-
-        Users user = userEntry.get();
-        this.ethereumService.contract.createListing(
-                EthereumService.uuidToBytes(listingId),
-                EthereumService.uuidToBytes(products.getProductId()),
-                user.getWalletAddress(),
-                BigDecimal.valueOf(listing.getStartingPrice()).toBigInteger()
-        ).send();
 
         this.listingImagesRepository.saveAll(images);
         this.listingsRepository.save(listing);

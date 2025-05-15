@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.EthTransaction;
+import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.protocol.core.methods.response.Web3ClientVersion;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
@@ -20,6 +22,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -32,7 +35,11 @@ public class EthereumService {
 
     private final String contractAddress = dotenv.get("CONTRACT_ADDRESS");
     private final Credentials credentials = Credentials.create(dotenv.get("HOLDER_PRIVATE_KEY"));
-    private final ContractGasProvider gasProvider = new DefaultGasProvider();
+    private final String gasPrice = dotenv.get("GAS_PRICE") != null ? dotenv.get( "GAS_PRICE") : "200";
+    private final ContractGasProvider gasProvider = new StaticGasProvider(
+            Convert.toWei(this.gasPrice, Convert.Unit.GWEI).toBigInteger(),
+            BigInteger.valueOf(6_000_000)
+    );
 
     public final BidsphereBiddingEscrow contract;
 
@@ -79,6 +86,16 @@ public class EthereumService {
         double conversionRate = this.fetchEthUsdPrice();
 
         return conversionRate * ethereumAmount;
+    }
+
+    public Optional<Transaction> getTransactionByHash(String transactionHash) throws Exception {
+        EthTransaction transactionResponse = web3j.ethGetTransactionByHash(transactionHash).send();
+
+        return transactionResponse.getTransaction();
+    }
+
+    public Boolean matchesContractAddress(String contractAddress) {
+        return contractAddress.equals(this.contractAddress);
     }
 
 }

@@ -16,7 +16,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
+import org.web3j.protocol.core.methods.response.EthTransaction;
+import org.web3j.protocol.core.methods.response.Transaction;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -104,20 +107,24 @@ public class Bid extends SessionizedController {
 
         this.bids.get(listing.getListingId()).put(user.getId(), Instant.now());
 
-        double highestBid = latestBid.map(Bids::getBidPrice).orElseGet(listing::getStartingPrice);
-        if (bidRequest.getAmount() <= highestBid) {
-            return ResponseEntity.badRequest().build();
+        Optional<Transaction> transactionQuery = this.ethereumService.getTransactionByHash(listing.getTransactionHash());
+        if (transactionQuery.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        double userAmount = this.ethereumService.getUSDBalance(user.getWalletAddress());
+        Transaction transaction = transactionQuery.get();
+        String senderWallet = transaction.getFrom();
+        String senderTarget = transaction.getTo();
 
-        if (bidRequest.getAmount() >= userAmount) {
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+        System.out.println("Received transaction from " + senderWallet + " to " + senderTarget + " with transaction [" + transaction.getHash() + "]");
+
+        if (!senderWallet.equals(user.getWalletAddress()) || !this.ethereumService.matchesContractAddress(senderTarget)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         this.bids.get(listing.getListingId()).put(user.getId(), Instant.now());
 
-        Bids currentBid = new Bids(bidRequest.getListingId(), bidRequest.getUserId(), bidRequest.getAmount());
+        Bids currentBid = new Bids(bidRequest);
         this.bidsRepository.save(currentBid);
 
         return ResponseEntity.ok(new BidDTO(currentBid));

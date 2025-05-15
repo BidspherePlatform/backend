@@ -16,6 +16,7 @@ import java.util.UUID;
 public class ListingDTO extends ProductPublishDTO {
     private UUID listingId;
     private UUID sellerId;
+    private String transactionHash;
     private ListingStatus status;
     private ProductDTO product;
     private BidDTO latestBid;
@@ -27,6 +28,7 @@ public class ListingDTO extends ProductPublishDTO {
         this.listingId = listing.getListingId();
         this.productId = product.getProductId();
         this.sellerId = listing.getSellerId();
+        this.transactionHash = listing.getTransactionHash();
         this.startingPrice = listing.getStartingPrice();
         this.startDate = listing.getStartDate();
         this.endDate = listing.getEndDate();
@@ -38,9 +40,10 @@ public class ListingDTO extends ProductPublishDTO {
         this.latestTransaction  = latestTransaction;
     }
 
-    public ListingDTO(UUID listingId, UUID sellerId, ProductPublishDTO productPublish, ProductDTO product) {
+    public ListingDTO(UUID listingId, UUID sellerId, ProductPublishDTO productPublish, ProductDTO product, String transactionHash) {
         this.listingId = listingId;
         this.sellerId = sellerId;
+        this.transactionHash = transactionHash;
         this.productId = productPublish.getProductId();
         this.startingPrice = productPublish.getStartingPrice();
         this.startDate = productPublish.getStartDate();

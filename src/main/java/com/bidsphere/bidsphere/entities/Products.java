@@ -31,6 +31,9 @@ public class Products {
     @Column(nullable = false)
     private String subCategory;
 
+    @Column(nullable = false)
+    private String transactionHash;
+
     protected Products() {}
 
     public Products(ProductDTO productDTO) {
@@ -40,5 +43,6 @@ public class Products {
         this.description = productDTO.getDescription();
         this.category = productDTO.getCategory();
         this.subCategory = productDTO.getSubCategory();
+        this.transactionHash = productDTO.getTransactionHash();
     }
 }

@@ -23,6 +23,9 @@ public class Listings {
     private UUID productId;
 
     @Column(nullable = false)
+    private String transactionHash;
+
+    @Column(nullable = false)
     private double startingPrice;
 
     @Column(nullable = false)
@@ -43,6 +46,7 @@ public class Listings {
         this.listingId = listingDTO.getListingId();
         this.sellerId = listingDTO.getSellerId();
         this.productId = listingDTO.getProduct().getProductId();
+        this.transactionHash = listingDTO.getTransactionHash();
         this.startingPrice = listingDTO.getStartingPrice();
         this.startDate = listingDTO.getStartDate();
         this.endDate = listingDTO.getEndDate();

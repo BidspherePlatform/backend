@@ -14,6 +14,7 @@ public class BidDTO {
     private UUID userId;
     private double bidPrice;
     private Date bidDate;
+    private String transactionHash;
 
     public BidDTO() {}
 
@@ -22,5 +23,6 @@ public class BidDTO {
         this.userId = bid.getUserId();
         this.bidPrice = bid.getBidPrice();
         this.bidDate = bid.getBidDate();
+        this.transactionHash = bid.getTransactionHash();
     }
 }
