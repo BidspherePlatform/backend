@@ -91,7 +91,7 @@ public class EthereumService {
     }
 
     public Boolean matchesContractAddress(String contractAddress) {
-        return contractAddress.equals(this.contractAddress);
+        return contractAddress.equalsIgnoreCase(this.contractAddress);
     }
 
 }
